@@ -51,6 +51,11 @@ function renderSeededBuilder() {
     return renderWithQueryClient(<BuilderApp formId={FORM_ID} />);
 }
 
+/** Scopes queries to the canvas so navigator rows never match by accident. */
+function canvas() {
+    return within(document.querySelector('.bldr-canvas') as HTMLElement);
+}
+
 beforeEach(() => {
     window.sessionStorage.setItem('sundew:settled', '1');
     window.localStorage.setItem('sundew:demo-dismissed', '1');
@@ -76,7 +81,7 @@ describe('BuilderApp with a guest doc', () => {
         renderSeededBuilder();
         // The title also appears in the fieldset's sr-only legend; either node
         // sits inside the card, so clicking the first is fine.
-        fireEvent.click(screen.getAllByText(/What did you find\?/)[0]!);
+        fireEvent.click(canvas().getAllByText(/What did you find\?/)[0]!);
         expect(screen.getByRole('heading', { name: 'Q-03 · radio' })).toBeInTheDocument();
     });
 
@@ -94,7 +99,7 @@ describe('BuilderApp with a guest doc', () => {
         renderSeededBuilder();
         // Q-02 (Date observed) has no description; selecting it must open the
         // permanent slot rather than mounting a new editor block.
-        fireEvent.click(screen.getAllByText(/Date observed/)[0]!);
+        fireEvent.click(canvas().getAllByText(/Date observed/)[0]!);
         const card = document.querySelector('.bldr-qcard.is-selected');
         expect(card).not.toBeNull();
         expect(card!.querySelector('.bldr-qdesc-slot')).toHaveClass('is-open');

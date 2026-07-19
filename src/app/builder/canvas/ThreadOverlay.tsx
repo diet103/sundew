@@ -222,11 +222,7 @@ export function ThreadOverlay({ doc, containerRef, hot, settling }: ThreadOverla
 
     const hotByKey = new Map(threads.map((spec) => [spec.key, isThreadHot(spec, hot)]));
     const anyHot = hot !== null && [...hotByKey.values()].some(Boolean);
-    const svgClass = [
-        'bldr-threads',
-        settling ? 'is-settling' : '',
-        anyHot ? 'has-hot' : '',
-    ]
+    const svgClass = ['bldr-threads', settling ? 'is-settling' : '', anyHot ? 'has-hot' : '']
         .filter(Boolean)
         .join(' ');
 
@@ -234,11 +230,7 @@ export function ThreadOverlay({ doc, containerRef, hot, settling }: ThreadOverla
         <svg className={svgClass} aria-hidden="true">
             {paths.map((path) => {
                 const isHot = hotByKey.get(path.key) === true;
-                const cls = [
-                    'bldr-thread',
-                    isHot ? 'is-hot' : '',
-                    path.broken ? 'is-broken' : '',
-                ]
+                const cls = ['bldr-thread', isHot ? 'is-hot' : '', path.broken ? 'is-broken' : '']
                     .filter(Boolean)
                     .join(' ');
                 const draw = settling && !path.broken;

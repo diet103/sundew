@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Question } from '@shared/schema';
 import { QuestionField } from '@app/runtime/QuestionField';
 import { deleteQuestion, updateQuestion } from '../state/actions';
+import { useNavSelector } from '../navigator/navStore';
 import { QUESTION_TYPE_LABELS } from './AddQuestionMenu';
 import { questionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
 import type { CanvasCtx } from './Canvas';
@@ -30,6 +31,8 @@ function prefersReducedMotion(): boolean {
 
 export function QuestionCard({ question, displayIndex, settleIndex, ctx }: QuestionCardProps) {
     const registry = useCardRegistry();
+    // Navigator jumps flash the landing card briefly.
+    const flashed = useNavSelector((state) => state.flashId === question.id);
     const titleRef = useRef<HTMLInputElement>(null);
     // Captured at mount: true only for the card the user just added, so the
     // grow-in runs once and never on initial load or reorder re-renders.
@@ -114,6 +117,7 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
         selected ? 'is-selected' : '',
         dormant ? 'is-dormant' : '',
         broken ? 'is-broken' : '',
+        flashed ? 'is-flashed' : '',
     ]
         .filter(Boolean)
         .join(' ');

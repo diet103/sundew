@@ -46,7 +46,9 @@ export function Canvas({ doc, dispatch, selection, onSelect, settling }: CanvasP
     const { ruleSourceOptions, ruleSourceQuestions } = useMemo(() => {
         const options = new Map<string, string[]>();
         const questions = new Set<string>();
-        const collect = (visibleWhen: { rules: { when: string; value?: string }[] } | undefined) => {
+        const collect = (
+            visibleWhen: { rules: { when: string; value?: string }[] } | undefined,
+        ) => {
             if (!visibleWhen) return;
             for (const rule of visibleWhen.rules) {
                 if (rule.value === undefined) {
@@ -108,10 +110,7 @@ export function Canvas({ doc, dispatch, selection, onSelect, settling }: CanvasP
     return (
         <div className={settling ? 'bldr-canvas bldr-settling' : 'bldr-canvas'} ref={canvasRef}>
             {doc.description !== undefined && doc.description !== '' && (
-                <p
-                    className="bldr-form-desc"
-                    onClick={() => onSelect({ kind: 'form' })}
-                >
+                <p className="bldr-form-desc" onClick={() => onSelect({ kind: 'form' })}>
                     {doc.description}
                 </p>
             )}
