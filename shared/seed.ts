@@ -122,7 +122,7 @@ export function specimenIntake(): FormDefinition {
                         id: qid(8),
                         type: 'longText',
                         title: 'Field notes',
-                        description: 'Try dragging this question above the rating. Alt+Arrow works too.',
+                        description: 'Try moving this question above the rating: Reorder in the section list, or Alt+Arrow.',
                         required: false,
                     },
                 ],
