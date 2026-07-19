@@ -1,0 +1,40 @@
+{
+    "name": "sundew",
+    "main": "src/worker/index.ts",
+    "compatibility_date": "2026-07-01",
+    "compatibility_flags": ["nodejs_compat"],
+    "workers_dev": true,
+    "assets": {
+        // Worker owns routing: it strips the /forms prefix, serves assets via the
+        // binding, and falls back to index.html for SPA deep links.
+        "directory": "./dist/client",
+        "binding": "ASSETS",
+        "not_found_handling": "none",
+        "run_worker_first": true
+    },
+    // Cutover: uncomment once dietergrosswiler.com serves traffic through Cloudflare.
+    // The more-specific /forms* route wins over the resume worker's custom domain.
+    // "routes": [
+    //     { "pattern": "dietergrosswiler.com/forms*", "zone_name": "dietergrosswiler.com" }
+    // ],
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "sundew",
+            "database_id": "REPLACE_WITH_wrangler_d1_create_OUTPUT",
+            "migrations_dir": "migrations"
+        }
+    ],
+    "triggers": {
+        // Daily cleanup of expired sessions and over-cap leftovers.
+        "crons": ["17 4 * * *"]
+    },
+    "vars": {
+        "APP_ORIGIN": "https://dietergrosswiler.com",
+        "GOOGLE_CLIENT_ID": "",
+        "GITHUB_CLIENT_ID": ""
+    }
+    // Secrets (wrangler secret put): GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET.
+    // Rate limiting uses a D1 fixed-window counter (see worker/middleware/ratelimit.ts);
+    // the Workers rate-limiting binding can replace it later behind the same interface.
+}

@@ -1,0 +1,19 @@
+# Copy to .dev.vars (gitignored) for local development.
+# Create OAuth apps and paste credentials here; the app runs fine without them
+# (guest mode + local drafts), you just can't sign in or publish.
+
+APP_ORIGIN=http://localhost:5173
+
+# Google OAuth 2.0 client (https://console.cloud.google.com/apis/credentials)
+# Authorized redirect URI: http://localhost:5173/forms/api/auth/google/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# GitHub OAuth app (https://github.com/settings/developers)
+# Callback URL: http://localhost:5173/forms/api/auth/github/callback
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Set to "1" to enable the test-only auth stub endpoint used by Playwright.
+# NEVER set in production.
+E2E_AUTH_STUB=
