@@ -357,6 +357,414 @@
     margin-top: 1.75rem;
 }
 
+/* ---- Fill drafts (menu + quiet indicators) -------------------------------- */
+.fill-drafts-row {
+    margin: 1rem 0 0.25rem;
+}
+
+.fill-drafts-bar {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.fill-drafts-btn {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.3em 0.8em;
+    cursor: pointer;
+}
+
+.fill-drafts-btn:hover,
+.fill-drafts-btn[aria-expanded='true'] {
+    color: var(--gray-0);
+    border-color: var(--accent-regular);
+}
+
+.fill-drafts-menu {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    z-index: 20;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    min-width: 10rem;
+    padding: 0.3rem;
+}
+
+.fill-drafts-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    text-align: left;
+    font-size: var(--text-sm);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4em 0.6em;
+    color: var(--gray-0);
+    cursor: pointer;
+}
+
+.fill-drafts-item:hover {
+    background-color: var(--accent-overlay);
+}
+
+.fill-drafts-item-state {
+    color: var(--muted);
+}
+
+.fill-drafts-status {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fill-drafts-warn {
+    margin-top: 0.5rem;
+    font-size: var(--text-sm);
+    color: var(--crimson);
+}
+
+/* ---- Drafts dialogs ------------------------------------------------------- */
+.fill-modal-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: var(--gray-999_40);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+
+.fill-modal {
+    width: 100%;
+    max-width: 44rem;
+    max-height: min(80dvh, 34rem);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 1.1rem 1.25rem;
+    outline: none;
+}
+
+.fill-modal-title {
+    font-size: var(--text-lg);
+    margin-bottom: 0.75rem;
+}
+
+.fill-modal-note {
+    font-size: var(--text-sm);
+    color: var(--muted);
+}
+
+.fill-modal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 1rem 0 1.5rem;
+}
+
+.fill-modal-panes {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 1.1rem;
+}
+
+.fill-modal-list {
+    flex: 1 1 55%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.fill-modal-preview {
+    flex: 1 1 45%;
+    min-width: 0;
+    overflow-y: auto;
+    border-left: 1px solid var(--rule);
+    padding-left: 1.1rem;
+}
+
+.fill-modal-search {
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+    background-color: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.35em 0.6em;
+}
+
+.fill-modal-search:focus-visible {
+    outline: 2px solid var(--accent-regular);
+    outline-offset: 1px;
+}
+
+.fill-modal-sort {
+    display: flex;
+    gap: 0.4rem;
+    font-size: var(--text-sm);
+    color: var(--muted);
+}
+
+.fill-sort-btn {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.2em 0.45em;
+    cursor: pointer;
+}
+
+.fill-sort-btn:hover {
+    color: var(--gray-0);
+}
+
+.fill-sort-btn[aria-pressed='true'] {
+    color: var(--accent-regular);
+}
+
+.fill-draftlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.fill-draftrow {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    overflow: hidden;
+}
+
+.fill-draftrow[data-selected] {
+    background-color: var(--accent-overlay);
+}
+
+.fill-draftrow-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0.4rem;
+    cursor: pointer;
+    color: var(--gray-0);
+}
+
+.fill-draftrow-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fill-draftrow-title.untitled {
+    color: var(--muted);
+}
+
+.fill-draftrow-time {
+    font-size: var(--text-sm);
+    color: var(--muted);
+}
+
+.fill-draftrow-actions {
+    display: none;
+    gap: 0.4rem;
+    padding-right: 0.4rem;
+}
+
+.fill-draftrow:hover .fill-draftrow-actions,
+.fill-draftrow:focus-within .fill-draftrow-actions {
+    display: inline-flex;
+}
+
+.fill-rowaction {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.2em 0.4em;
+    cursor: pointer;
+}
+
+.fill-rowaction:hover {
+    color: var(--gray-0);
+    background-color: var(--accent-overlay);
+}
+
+/* Inline delete confirm: slides in over the row, no second dialog. */
+.fill-draftrow-confirm {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+    background-color: var(--sd-card-bg);
+    border-left: 2px solid var(--crimson);
+    transform: translateX(0);
+    animation: fill-confirm-slide 160ms ease-out;
+}
+
+@keyframes fill-confirm-slide {
+    from {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fill-draftrow-confirm {
+        animation: none;
+    }
+}
+
+.fill-draftrow-rename {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem;
+}
+
+.fill-draftrow-rename input {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+    background-color: transparent;
+    border: 1px solid var(--accent-regular);
+    border-radius: 4px;
+    padding: 0.25em 0.5em;
+}
+
+.fill-char-count {
+    font-size: var(--text-sm);
+    color: var(--muted);
+}
+
+.fill-inline-error {
+    font-size: var(--text-sm);
+    color: var(--crimson);
+}
+
+.fill-preview-qa {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.fill-preview-q {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    margin-bottom: 0.1rem;
+}
+
+.fill-preview-a {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.fill-preview-orphans {
+    margin-top: 1.1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--rule);
+}
+
+.fill-preview-orphan-list {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+.fill-saveas-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.fill-saveas-body input {
+    flex: 1 1 16rem;
+    min-width: 0;
+    color: var(--gray-0);
+    background-color: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.4em 0.6em;
+}
+
+.fill-saveas-body input:focus-visible {
+    outline: 2px solid var(--accent-regular);
+    outline-offset: 1px;
+}
+
+.fill-saveas-body .fill-inline-error {
+    flex-basis: 100%;
+}
+
+.fill-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 1.1rem;
+    margin-top: 1.1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--rule);
+}
+
+@media (max-width: 50em) {
+    .fill-modal-panes {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .fill-modal-preview {
+        border-left: none;
+        border-top: 1px solid var(--rule);
+        padding-left: 0;
+        padding-top: 0.75rem;
+        overflow-y: visible;
+    }
+}
+
 /* The page's one load moment: title leads, the sheet settles in behind it. */
 @keyframes fill-settle {
     from {

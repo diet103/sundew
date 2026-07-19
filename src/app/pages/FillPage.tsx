@@ -8,7 +8,8 @@ import { ApiFailure, api } from '@app/api/client';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
-import { fillDraftKey } from '@app/builder/autosave/localMirror';
+import { useDrafts } from '@app/runtime/drafts/useDrafts';
+import { DraftsMenu } from '@app/runtime/drafts/DraftsMenu';
 import { SundewMark } from '@app/components/SundewMark';
 
 // Respondent-facing footer: neutral voice, links back to the product.
@@ -41,7 +42,9 @@ function DemoBanner({ slug }: { slug: string }) {
 }
 
 function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
-    const state = useFillState(fill.definition, fillDraftKey(slug));
+    const drafts = useDrafts(slug, fill.definition, fill.version);
+    const state = useFillState(fill.definition, drafts.ready.initialAnswers);
+    const [pruned, setPruned] = useState(drafts.ready.prunedCount > 0);
     const [done, setDone] = useState<SubmitResponse | null>(null);
     const [serverErrors, setServerErrors] = useState<SubmissionError[]>([]);
     const [failure, setFailure] = useState<'rateLimited' | 'generic' | null>(null);
@@ -54,6 +57,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
             if (result.ok) {
                 setDone(result);
                 state.reset();
+                drafts.completeSubmit();
             } else {
                 setServerErrors(result.errors);
             }
@@ -69,6 +73,14 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     useEffect(() => {
         document.title = fill.formTitle;
     }, [fill.formTitle]);
+
+    // Mirror every answers change into the draft layer. Reading the committed
+    // state (instead of computing "next" inside onAnswer) can never go stale,
+    // and the draft layer's dirty gate makes redundant notifications free.
+    const { onChange: draftsOnChange } = drafts;
+    useEffect(() => {
+        draftsOnChange(state.answers);
+    }, [draftsOnChange, state.answers]);
 
     const summaryErrors = state.summaryErrors.length > 0 ? state.summaryErrors : serverErrors;
 
@@ -99,7 +111,23 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
         submitMutation.mutate(state.answers);
     };
 
+    const handleNewDraft = () => {
+        drafts.newDraft();
+        state.replaceAnswers({});
+        setServerErrors([]);
+        setPruned(false);
+    };
+
+    const handleResume = (id: string) => {
+        const resumed = drafts.resume(id);
+        if (resumed === null) return;
+        state.replaceAnswers(resumed.answers);
+        setServerErrors([]);
+        setPruned(resumed.droppedCount > 0);
+    };
+
     if (done) {
+        const remaining = drafts.drafts.length;
         return (
             <FillShell>
                 <div className="fill-confirm">
@@ -112,6 +140,29 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                     <p className="mono fill-receipt">
                         R-{done.submissionId.slice(-4).toUpperCase()}
                     </p>
+                    {remaining > 0 && (
+                        <p className="mono quiet-notice">
+                            {remaining === 1
+                                ? '1 draft for this form remains in this browser'
+                                : `${remaining} drafts for this form remain in this browser`}
+                            {' · '}
+                            <button
+                                type="button"
+                                className="text-button mono"
+                                onClick={() => {
+                                    if (
+                                        window.confirm(
+                                            'Discard all drafts for this form? This cannot be undone.',
+                                        )
+                                    ) {
+                                        drafts.discardAll();
+                                    }
+                                }}
+                            >
+                                Discard them
+                            </button>
+                        </p>
+                    )}
                 </div>
             </FillShell>
         );
@@ -125,8 +176,21 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                 {fill.definition.description !== undefined && (
                     <p className="fill-description">{fill.definition.description}</p>
                 )}
-                {state.hadSavedDraft && (
+                <div className="fill-drafts-row">
+                    <DraftsMenu
+                        drafts={drafts}
+                        definition={fill.definition}
+                        onNewDraft={handleNewDraft}
+                        onResume={handleResume}
+                    />
+                </div>
+                {drafts.ready.restored && (
                     <p className="mono quiet-notice">draft restored · saved in this browser</p>
+                )}
+                {pruned && (
+                    <p className="mono quiet-notice">
+                        this form changed since this draft · some answers may not apply
+                    </p>
                 )}
                 <div ref={summaryRef}>
                     <ErrorSummary errors={summaryErrors} definition={fill.definition} />

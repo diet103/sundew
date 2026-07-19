@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FormDefinition, Question } from '@shared/schema';
 import { hasOptions } from '@shared/schema';
-import { OPT_PLANT, Q_FOUND, specimenIntake } from '@shared/seed';
+import { Q_FOUND, specimenIntake } from '@shared/seed';
 import { ErrorSummary } from './ErrorSummary';
 import { FormRenderer } from './FormRenderer';
 import { useFillState } from './useFillState';
@@ -26,8 +26,8 @@ function optionIdByLabel(def: FormDefinition, questionTitle: string, optionLabel
     return option.id;
 }
 
-function Harness({ definition, storageKey }: { definition: FormDefinition; storageKey?: string }) {
-    const fill = useFillState(definition, storageKey);
+function Harness({ definition }: { definition: FormDefinition }) {
+    const fill = useFillState(definition);
     return (
         <div>
             <ErrorSummary errors={fill.summaryErrors} definition={definition} />
@@ -44,7 +44,6 @@ function Harness({ definition, storageKey }: { definition: FormDefinition; stora
                 Reset
             </button>
             <output data-testid="answers-json">{JSON.stringify(fill.answers)}</output>
-            <output data-testid="had-draft">{String(fill.hadSavedDraft)}</output>
         </div>
     );
 }
@@ -165,34 +164,5 @@ describe('field round-trips', () => {
     });
 });
 
-describe('useFillState drafts', () => {
-    it('persists a debounced draft, hydrates on remount, and clears on reset', () => {
-        vi.useFakeTimers();
-        const definition = specimenIntake();
-        const key = 'sundew-test-draft';
-
-        const first = render(<Harness definition={definition} storageKey={key} />);
-        expect(screen.getByTestId('had-draft')).toHaveTextContent('false');
-        fireEvent.click(screen.getByRole('radio', { name: 'A plant' }));
-        expect(window.localStorage.getItem(key)).toBeNull();
-        act(() => {
-            vi.advanceTimersByTime(600);
-        });
-        expect(window.localStorage.getItem(key)).toContain(Q_FOUND);
-        expect(window.localStorage.getItem(key)).toContain(OPT_PLANT);
-        first.unmount();
-
-        render(<Harness definition={definition} storageKey={key} />);
-        expect(screen.getByTestId('had-draft')).toHaveTextContent('true');
-        expect(screen.getByRole('radio', { name: 'A plant' })).toBeChecked();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
-        expect(window.localStorage.getItem(key)).toBeNull();
-        expect(screen.getByRole('radio', { name: 'A plant' })).not.toBeChecked();
-        act(() => {
-            vi.advanceTimersByTime(600);
-        });
-        // The debounced writer must not resurrect the cleared draft.
-        expect(window.localStorage.getItem(key)).toBeNull();
-    });
-});
+// Draft persistence moved out of useFillState: migration and store logic are
+// covered in drafts/draftStore.test.ts, the wired-up behavior in drafts tests.

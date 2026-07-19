@@ -2,15 +2,13 @@ import type { FormDefinition } from '@shared/schema';
 import { zFormDefinition } from '@shared/schema';
 
 export const GUEST_DOC_PREFIX = 'sundew:doc:';
-export const FILL_DRAFT_PREFIX = 'sundew:fill:';
 
 export function guestDocKey(localId: string): string {
     return GUEST_DOC_PREFIX + localId;
 }
 
-export function fillDraftKey(slug: string): string {
-    return FILL_DRAFT_PREFIX + slug;
-}
+// The fill-draft key (sundew:fill:<slug>) moved to @app/runtime/drafts/draftStore
+// so the fill graph never imports builder code.
 
 // Every helper swallows storage failures (quota, private mode, no localStorage):
 // the mirror is a best-effort safety net, never a hard dependency.
