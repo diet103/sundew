@@ -75,75 +75,89 @@ export function SectionCard({
             }}
             onMouseLeave={() => ctx.setHot(null)}
         >
-            <header
-                className="bldr-shead"
-                onClick={() => ctx.onSelect({ kind: 'section', id: section.id })}
-            >
-                <input
-                    className="bldr-stitle eyebrow"
-                    aria-label="Section title"
-                    placeholder="Section title"
-                    value={section.title}
-                    onChange={(event) =>
-                        ctx.dispatch(updateSection(section.id, { title: event.target.value }))
+            <div className="bldr-smain">
+                <header
+                    className="bldr-shead"
+                    onClick={() => ctx.onSelect({ kind: 'section', id: section.id })}
+                >
+                    <input
+                        className="bldr-stitle eyebrow"
+                        aria-label="Section title"
+                        placeholder="Section title"
+                        value={section.title}
+                        onChange={(event) =>
+                            ctx.dispatch(updateSection(section.id, { title: event.target.value }))
+                        }
+                        onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
+                    />
+                    <span className="bldr-sactions">
+                        <button
+                            type="button"
+                            className="sd-drag"
+                            aria-label="Reorder section"
+                            {...attributes}
+                            {...listeners}
+                        >
+                            <span aria-hidden="true">⠿</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="bldr-icon-btn"
+                            aria-label="Move section up"
+                            disabled={index === 0}
+                            onClick={stop(() => ctx.dispatch(moveSection(section.id, index - 1)))}
+                        >
+                            <span aria-hidden="true">↑</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="bldr-icon-btn"
+                            aria-label="Move section down"
+                            disabled={index === sectionCount - 1}
+                            onClick={stop(() => ctx.dispatch(moveSection(section.id, index + 1)))}
+                        >
+                            <span aria-hidden="true">↓</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="bldr-icon-btn"
+                            aria-label="Delete section"
+                            onClick={stop(() => ctx.dispatch(deleteSection(section.id)))}
+                        >
+                            <span aria-hidden="true">✕</span>
+                        </button>
+                    </span>
+                </header>
+                <div
+                    className={
+                        selected || section.description !== undefined
+                            ? 'bldr-sdesc-slot is-open'
+                            : 'bldr-sdesc-slot'
                     }
-                    onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
-                />
-                <span className="bldr-sactions">
-                    <button
-                        type="button"
-                        className="sd-drag"
-                        aria-label="Reorder section"
-                        {...attributes}
-                        {...listeners}
-                    >
-                        <span aria-hidden="true">⠿</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="bldr-icon-btn"
-                        aria-label="Move section up"
-                        disabled={index === 0}
-                        onClick={stop(() => ctx.dispatch(moveSection(section.id, index - 1)))}
-                    >
-                        <span aria-hidden="true">↑</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="bldr-icon-btn"
-                        aria-label="Move section down"
-                        disabled={index === sectionCount - 1}
-                        onClick={stop(() => ctx.dispatch(moveSection(section.id, index + 1)))}
-                    >
-                        <span aria-hidden="true">↓</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="bldr-icon-btn"
-                        aria-label="Delete section"
-                        onClick={stop(() => ctx.dispatch(deleteSection(section.id)))}
-                    >
-                        <span aria-hidden="true">✕</span>
-                    </button>
-                </span>
-            </header>
-            {(selected || section.description !== undefined) && (
-                <input
-                    className="bldr-sdesc"
-                    aria-label="Section description"
-                    placeholder="Section description"
-                    value={section.description ?? ''}
-                    onChange={(event) =>
-                        ctx.dispatch(
-                            updateSection(section.id, {
-                                description:
-                                    event.target.value === '' ? undefined : event.target.value,
-                            }),
-                        )
-                    }
-                    onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
-                />
-            )}
+                >
+                    <div className="bldr-sdesc-inner">
+                        {(selected || section.description !== undefined) && (
+                            <input
+                                className="bldr-sdesc"
+                                aria-label="Section description"
+                                placeholder="Section description"
+                                value={section.description ?? ''}
+                                onChange={(event) =>
+                                    ctx.dispatch(
+                                        updateSection(section.id, {
+                                            description:
+                                                event.target.value === ''
+                                                    ? undefined
+                                                    : event.target.value,
+                                        }),
+                                    )
+                                }
+                                onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
+                            />
+                        )}
+                    </div>
+                </div>
+            </div>
             {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
             {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
             <SortableContext

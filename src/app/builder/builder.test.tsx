@@ -90,6 +90,19 @@ describe('BuilderApp with a guest doc', () => {
         expect(screen.getByRole('heading', { name: 'Q-04 · short text' })).toBeInTheDocument();
     });
 
+    it('opens the description slot in place when selecting a description-less question', () => {
+        renderSeededBuilder();
+        // Q-02 (Date observed) has no description; selecting it must open the
+        // permanent slot rather than mounting a new editor block.
+        fireEvent.click(screen.getAllByText(/Date observed/)[0]!);
+        const card = document.querySelector('.bldr-qcard.is-selected');
+        expect(card).not.toBeNull();
+        expect(card!.querySelector('.bldr-qdesc-slot')).toHaveClass('is-open');
+        const desc = screen.getByRole('textbox', { name: 'Question description' });
+        fireEvent.change(desc, { target: { value: 'When you saw it' } });
+        expect(desc).toHaveValue('When you saw it');
+    });
+
     it('marks conditional sections dormant with a human-readable hint', () => {
         renderSeededBuilder();
         expect(screen.getByText('hidden · shown when Q-03 = "A plant"')).toBeInTheDocument();
