@@ -360,6 +360,11 @@
 /* ---- Fill drafts (menu + quiet indicators) -------------------------------- */
 .fill-drafts-row {
     margin: 1rem 0 0.25rem;
+    /* The settle animation turns every .fill-page child into a stacking
+       context, so the menu needs the row itself lifted above later siblings
+       (the form) and the fixed banner. */
+    position: relative;
+    z-index: 30;
 }
 
 .fill-drafts-bar {
