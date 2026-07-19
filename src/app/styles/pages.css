@@ -1,0 +1,529 @@
+/* ===========================================================================
+   Sundew pages — app shell, workspace catalog, fill page, responses inbox.
+   Hairline aesthetic on the Field Notebook tokens; both themes resolve via
+   tokens only. Single breakpoint at 50em.
+   =========================================================================== */
+
+/* ---- Shell ---------------------------------------------------------------- */
+.page-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-main {
+    flex: 1;
+    width: 100%;
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+}
+
+.center-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--muted);
+}
+
+.page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.page-header-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.page-header-title {
+    font-size: var(--text-2xl);
+}
+
+.accent-mark {
+    color: var(--accent-regular);
+}
+
+.sundew-mark {
+    display: inline-block;
+    width: var(--mark-size, 1em);
+    height: var(--mark-size, 1em);
+    vertical-align: middle;
+    overflow: visible;
+}
+
+/* ---- Footer (hairline) ---------------------------------------------------- */
+.app-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    max-width: 52rem;
+    width: calc(100% - 2.5rem);
+    margin: 0 auto;
+    padding: 1.1rem 0 1.6rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+}
+
+.app-footer a {
+    color: inherit;
+}
+
+.app-footer a:hover {
+    color: var(--accent-press);
+}
+
+/* ---- Buttons -------------------------------------------------------------- */
+.text-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--link-color);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    cursor: pointer;
+}
+
+.text-button:hover {
+    color: var(--accent-press);
+}
+
+.text-button:disabled {
+    color: var(--muted);
+    cursor: default;
+    text-decoration: none;
+}
+
+.accent-button {
+    background-color: var(--accent-regular);
+    color: var(--accent-text-over);
+    border: 1px solid var(--accent-regular);
+    border-radius: 4px;
+    padding: 0.5em 1.1em;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+
+.accent-button:hover {
+    background-color: var(--accent-press);
+    border-color: var(--accent-press);
+}
+
+.accent-button:disabled {
+    background-color: var(--gray-600);
+    border-color: var(--gray-600);
+    cursor: default;
+}
+
+/* ---- Status dots ---------------------------------------------------------- */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--rule);
+    background: transparent;
+    vertical-align: middle;
+}
+
+.status-dot-live {
+    border-color: var(--sd-live);
+    background-color: var(--sd-live);
+}
+
+.live-tag {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* ---- Workspace catalog ---------------------------------------------------- */
+.catalog {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+}
+
+.catalog-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--rule);
+}
+
+.catalog-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: none;
+    min-width: 1rem;
+}
+
+.catalog-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.catalog-title {
+    font-family: var(--font-brand);
+    font-size: var(--text-lg);
+    font-weight: 420;
+    color: var(--gray-0);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.catalog-title:hover {
+    color: var(--accent-press);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+.catalog-meta {
+    color: var(--muted);
+}
+
+.catalog-links {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 1.1rem;
+    flex: none;
+}
+
+.catalog-empty {
+    color: var(--muted);
+    padding: 1.5rem 0;
+}
+
+.catalog-actions-row {
+    margin-top: 1.5rem;
+}
+
+/* ---- Notices, banners, auth ----------------------------------------------- */
+.quiet-notice {
+    color: var(--muted);
+    margin: 0.75rem 0;
+}
+
+.notice-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 1.25rem;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--gray-0);
+}
+
+.account-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 1rem;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+}
+
+.signin-row {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.signin-row-label {
+    color: var(--muted);
+}
+
+.signin-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.signin-button {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.55em 1em;
+    text-decoration: none;
+}
+
+.signin-button:hover {
+    border-color: var(--accent-regular);
+    color: var(--gray-0);
+}
+
+/* ---- Fill page ------------------------------------------------------------ */
+.fill-shell-banner {
+    /* clear the fixed demo banner */
+    padding-top: 3.25rem;
+}
+
+.fill-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: 0.45rem 1rem;
+    background-color: var(--sd-card-bg);
+    border-bottom: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: var(--text-sm);
+    text-align: center;
+}
+
+.fill-page {
+    flex: 1;
+    width: 100%;
+    max-width: 64ch;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+}
+
+.fill-title {
+    font-size: var(--text-3xl);
+    margin-bottom: 0.6rem;
+}
+
+.fill-description {
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+}
+
+.fill-page .sd-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    margin-top: 1.5rem;
+}
+
+.fill-submit-row {
+    margin-top: 2.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.fill-confirm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 4rem 0;
+}
+
+.fill-confirm-message {
+    font-family: var(--font-brand);
+    font-size: var(--text-xl);
+    color: var(--gray-0);
+    max-width: 40ch;
+}
+
+.fill-receipt {
+    color: var(--muted);
+}
+
+.fill-closed {
+    color: var(--gray-0);
+    max-width: 40ch;
+}
+
+.fill-footer {
+    max-width: 64ch;
+    width: calc(100% - 2.5rem);
+    margin: 0 auto;
+    padding: 1.1rem 0 1.6rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+}
+
+.fill-footer a {
+    color: inherit;
+}
+
+.fill-footer a:hover {
+    color: var(--accent-press);
+}
+
+/* ---- Responses inbox ------------------------------------------------------ */
+.resp-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+}
+
+.resp-title {
+    font-size: var(--text-3xl);
+}
+
+.resp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--muted);
+}
+
+.resp-edit-link {
+    margin: 0;
+}
+
+.share-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    max-width: 100%;
+    padding: 0.4rem 0.7rem;
+    background-color: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.share-chip-url {
+    color: var(--gray-0);
+    overflow-wrap: anywhere;
+    user-select: all;
+}
+
+.resp-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.6rem;
+}
+
+.resp-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+}
+
+.resp-row {
+    border-bottom: 1px solid var(--rule);
+}
+
+.resp-summary {
+    padding: 0.8rem 0.25rem;
+    cursor: pointer;
+    color: var(--gray-0);
+    overflow-wrap: anywhere;
+}
+
+.resp-summary:hover {
+    background-color: var(--accent-subtle-overlay);
+}
+
+.resp-detail {
+    padding: 0.4rem 0.25rem 1.2rem 1.5rem;
+}
+
+.resp-detail-note {
+    padding: 0.4rem 0.25rem 1rem 1.5rem;
+    color: var(--muted);
+}
+
+.resp-qa {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.resp-qa-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.resp-question {
+    color: var(--muted);
+    font-size: var(--text-base);
+}
+
+.resp-answer {
+    margin: 0;
+    color: var(--gray-0);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.resp-no-answer {
+    color: var(--gray-400);
+}
+
+.resp-detail-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    margin-top: 1.1rem;
+}
+
+.version-tag {
+    color: var(--muted);
+}
+
+.resp-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 2.5rem 0;
+}
+
+.resp-empty-title {
+    font-size: var(--text-2xl);
+}
+
+.resp-load-more {
+    padding: 1rem 0;
+}
+
+/* ---- Breakpoint ----------------------------------------------------------- */
+@media (max-width: 50em) {
+    .page-main {
+        padding: 1.75rem 1rem 3rem;
+    }
+
+    .catalog-row {
+        flex-wrap: wrap;
+    }
+
+    .catalog-links {
+        width: 100%;
+        justify-content: flex-end;
+        padding-left: 1.9rem;
+    }
+
+    .fill-shell-banner {
+        padding-top: 4.5rem;
+    }
+}

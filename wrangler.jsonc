@@ -5,12 +5,15 @@
     "compatibility_flags": ["nodejs_compat"],
     "workers_dev": true,
     "assets": {
-        // Worker owns routing: it strips the /forms prefix, serves assets via the
-        // binding, and falls back to index.html for SPA deep links.
+        // Assets-first serving: the store is laid out under /forms/* by
+        // scripts/postbuild.mjs (with a root index.html copy as the SPA
+        // fallback target and a _headers file for security/cache headers).
+        // The worker runs first only for the API, the root redirect, and
+        // robots.txt — in dev this lets Vite serve HTML/modules directly.
         "directory": "./dist/client",
         "binding": "ASSETS",
-        "not_found_handling": "none",
-        "run_worker_first": true
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/forms/api/*", "/", "/forms/robots.txt"]
     },
     // Cutover: uncomment once dietergrosswiler.com serves traffic through Cloudflare.
     // The more-specific /forms* route wins over the resume worker's custom domain.

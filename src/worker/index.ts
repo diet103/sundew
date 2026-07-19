@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import type { Context } from 'hono';
 import type { AppEnv, Env } from './env';
 import { csrfProtect, requireUser, writeLimiter } from './middleware/guards';
 import { attachSession } from './middleware/session';
@@ -7,14 +6,6 @@ import { auth } from './routes/auth';
 import { fill } from './routes/fill';
 import { forms } from './routes/forms';
 import { submissions } from './routes/submissions';
-
-const CSP = [
-    "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
-    "connect-src 'self'",
-].join('; ');
 
 const app = new Hono<AppEnv>();
 
@@ -49,56 +40,19 @@ app.get('/forms/robots.txt', (c) =>
     c.text('User-agent: *\nAllow: /forms/\nDisallow: /forms/f/\nDisallow: /forms/api/\n'),
 );
 
-async function fetchAsset(assets: Fetcher, origin: string, path: string): Promise<Response | null> {
+// HTML, modules, and static files are served assets-first (see wrangler.jsonc):
+// the store is laid out under /forms/* with a root index.html as the SPA
+// fallback and _headers carrying security/cache headers. Only the API, the
+// root redirect, and robots.txt run worker-first, so this catch-all exists
+// purely as belt-and-braces should a /forms/* GET ever reach the worker.
+app.get('/forms/*', async (c) => {
+    const origin = new URL(c.req.url).origin;
     try {
-        const res = await assets.fetch(new Request(origin + path));
-        return res.ok ? res : null;
+        return await c.env.ASSETS.fetch(new Request(origin + '/index.html'));
     } catch {
-        return null;
+        return c.text('Not found', 404);
     }
-}
-
-function withHtmlHeaders(requestPath: string, res: Response, forceOk: boolean): Response {
-    const isHtml = (res.headers.get('Content-Type') ?? '').toLowerCase().includes('text/html');
-    if (!isHtml && !forceOk) return res;
-    const out = new Response(res.body, {
-        status: forceOk ? 200 : res.status,
-        headers: res.headers,
-    });
-    if (isHtml) {
-        out.headers.set('X-Content-Type-Options', 'nosniff');
-        out.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        out.headers.set('X-Frame-Options', 'DENY');
-        out.headers.set('Content-Security-Policy', CSP);
-        if (requestPath.startsWith('/forms/f/')) out.headers.set('X-Robots-Tag', 'noindex');
-    }
-    return out;
-}
-
-// The bundle is built with base '/forms/', but depending on the assets layout the
-// files may live at either /forms/<file> or /<file> inside dist/client — try both,
-// then fall back to the SPA's index.html for deep links.
-async function serveSpa(c: Context<AppEnv>): Promise<Response> {
-    const url = new URL(c.req.url);
-    const assets = c.env.ASSETS;
-    const candidates = [url.pathname];
-    if (url.pathname.startsWith('/forms')) {
-        const stripped = url.pathname.slice('/forms'.length);
-        if (stripped !== '' && stripped !== '/') candidates.push(stripped);
-    }
-    for (const path of candidates) {
-        const res = await fetchAsset(assets, url.origin, path);
-        if (res) return withHtmlHeaders(url.pathname, res, false);
-    }
-    for (const path of ['/index.html', '/forms/index.html']) {
-        const res = await fetchAsset(assets, url.origin, path);
-        if (res) return withHtmlHeaders(url.pathname, res, true);
-    }
-    return c.text('Not found', 404);
-}
-
-app.get('/forms', serveSpa);
-app.get('/forms/*', serveSpa);
+});
 
 const worker = {
     fetch(request, env, ctx) {

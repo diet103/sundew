@@ -1,0 +1,190 @@
+import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
+import { useEffect, useRef } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { Question } from '@shared/schema';
+import { QuestionField } from '@app/runtime/QuestionField';
+import { deleteQuestion, updateQuestion } from '../state/actions';
+import { qDndId } from '../dnd/sortable';
+import { questionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
+import type { CanvasCtx } from './Canvas';
+
+export interface QuestionCardProps {
+    question: Question;
+    sectionId: string;
+    displayIndex: number;
+    settleIndex: number;
+    ctx: CanvasCtx;
+}
+
+function pointInRect(rect: DOMRect, x: number, y: number): boolean {
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+export function QuestionCard({ question, displayIndex, settleIndex, ctx }: QuestionCardProps) {
+    const registry = useCardRegistry();
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: qDndId(question.id),
+    });
+    const titleRef = useRef<HTMLInputElement>(null);
+
+    const selected = ctx.selection?.kind === 'question' && ctx.selection.id === question.id;
+    const dormant =
+        question.visibleWhen !== undefined && !ctx.visibility.visibleQuestions.has(question.id);
+    const broken = ctx.visibility.brokenRuleTargets.has(question.id);
+    const hint = question.visibleWhen ? visibilityHint(ctx.doc, question.visibleWhen) : null;
+    const ruleSourceOptionIds = ctx.ruleSourceOptions.get(question.id) ?? [];
+    const isRuleSource = ctx.ruleSourceQuestions.has(question.id);
+
+    const autoFocusTitle = selected && ctx.justAddedId === question.id;
+    useEffect(() => {
+        if (autoFocusTitle && titleRef.current) {
+            titleRef.current.focus();
+            ctx.onAutoFocusDone();
+        }
+    }, [autoFocusTitle, ctx]);
+
+    const setRefs = (el: HTMLDivElement | null) => {
+        setNodeRef(el);
+        registry.register(questionCardKey(question.id), el);
+    };
+
+    const onCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+            event.preventDefault();
+            ctx.onMoveQuestion(question.id, event.key === 'ArrowUp' ? -1 : 1);
+            return;
+        }
+        if (event.key === 'Enter' && event.target === event.currentTarget) {
+            ctx.onSelect({ kind: 'question', id: question.id });
+        }
+    };
+
+    // The control area is inert, so option-row hovers are recovered by
+    // hit-testing the pointer against the rendered option rows.
+    const onMouseMove = (event: MouseEvent<HTMLDivElement>) => {
+        for (const optionId of ruleSourceOptionIds) {
+            const input = document.getElementById(`bldr-${question.id}-control-${optionId}`);
+            const row = input?.closest('.sd-option');
+            if (row && pointInRect(row.getBoundingClientRect(), event.clientX, event.clientY)) {
+                ctx.setHot({ kind: 'option', id: optionId });
+                return;
+            }
+        }
+        if (isRuleSource || question.visibleWhen) {
+            ctx.setHot({ kind: 'card', id: question.id });
+        } else {
+            ctx.setHot(null);
+        }
+    };
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        '--settle-i': settleIndex,
+    } as CSSProperties;
+
+    const meta = [
+        `Q-${String(displayIndex).padStart(2, '0')}`,
+        question.type,
+        ...(question.required ? ['required'] : []),
+        ...(dormant ? ['hidden by logic'] : []),
+    ].join(' · ');
+
+    const cardClass = [
+        'bldr-qcard',
+        selected ? 'is-selected' : '',
+        dormant ? 'is-dormant' : '',
+        broken ? 'is-broken' : '',
+        isDragging ? 'sd-dragging' : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return (
+        <div
+            ref={setRefs}
+            className={cardClass}
+            style={style}
+            role="group"
+            aria-label={`Question ${displayIndex}: ${question.title || 'untitled'}`}
+            tabIndex={0}
+            onClick={() => ctx.onSelect({ kind: 'question', id: question.id })}
+            onKeyDown={onCardKeyDown}
+            onMouseMove={onMouseMove}
+            onMouseLeave={() => ctx.setHot(null)}
+            onFocus={(event) => {
+                if (event.target === event.currentTarget && question.visibleWhen) {
+                    ctx.setHot({ kind: 'card', id: question.id });
+                }
+            }}
+        >
+            <div className="bldr-qtop">
+                <span className="bldr-qmeta mono" aria-hidden="true">
+                    {meta}
+                </span>
+                <span className="bldr-qactions">
+                    <button
+                        type="button"
+                        className="sd-drag"
+                        aria-label="Reorder question"
+                        {...attributes}
+                        {...listeners}
+                    >
+                        <span aria-hidden="true">⠿</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="bldr-icon-btn"
+                        aria-label="Delete question"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            ctx.dispatch(deleteQuestion(question.id));
+                        }}
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </button>
+                </span>
+            </div>
+            {selected && (
+                <div className="bldr-qedit">
+                    <input
+                        ref={titleRef}
+                        className="bldr-inline-title"
+                        aria-label="Question title"
+                        placeholder="Question title"
+                        value={question.title}
+                        onChange={(event) =>
+                            ctx.dispatch(updateQuestion(question.id, { title: event.target.value }))
+                        }
+                    />
+                    <input
+                        className="bldr-inline-desc"
+                        aria-label="Question description"
+                        placeholder="Add a description"
+                        value={question.description ?? ''}
+                        onChange={(event) =>
+                            ctx.dispatch(
+                                updateQuestion(question.id, {
+                                    description:
+                                        event.target.value === '' ? undefined : event.target.value,
+                                }),
+                            )
+                        }
+                    />
+                </div>
+            )}
+            <div inert className={selected ? 'bldr-qbody is-headless' : 'bldr-qbody'}>
+                <QuestionField
+                    question={question}
+                    value={undefined}
+                    onChange={() => {}}
+                    idPrefix="bldr-"
+                    hideDescription={selected}
+                />
+            </div>
+            {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
+            {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
+        </div>
+    );
+}

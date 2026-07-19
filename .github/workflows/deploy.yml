@@ -20,6 +20,7 @@ jobs:
             - run: npx tsc --noEmit
             - run: npx vitest run
             - run: npx vite build
+            - run: npm run check:size
             - name: Apply D1 migrations
               uses: cloudflare/wrangler-action@v3
               with:
@@ -31,4 +32,4 @@ jobs:
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: deploy
+                  command: deploy --config dist/sundew/wrangler.json

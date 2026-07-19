@@ -14,7 +14,7 @@
     },
     "scripts": {
         "dev": "vite dev",
-        "build": "tsc --noEmit && vite build",
+        "build": "tsc --noEmit && vite build && node scripts/postbuild.mjs",
         "preview": "vite preview",
         "test": "vitest run",
         "test:watch": "vitest",
@@ -22,7 +22,8 @@
         "lint": "eslint .",
         "format": "prettier --write .",
         "e2e": "playwright test",
-        "deploy": "npm run build && wrangler deploy",
+        "check:size": "node scripts/check-bundle-size.mjs",
+        "deploy": "npm run build && npm run check:size && wrangler deploy --config dist/sundew/wrangler.json",
         "db:migrate:local": "wrangler d1 migrations apply DB --local",
         "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
     },

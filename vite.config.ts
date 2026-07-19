@@ -13,7 +13,4 @@ export default defineConfig({
             '@app': new URL('./src/app', import.meta.url).pathname,
         },
     },
-    build: {
-        outDir: 'dist/client',
-    },
 });

@@ -1,0 +1,202 @@
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormDefinition } from '@shared/schema';
+import { FormRenderer } from '@app/runtime/FormRenderer';
+import { ErrorSummary } from '@app/runtime/ErrorSummary';
+import { useFillState } from '@app/runtime/useFillState';
+import '@app/styles/builder.css';
+import { useBuilderDoc } from './useBuilderDoc';
+import { TopBar } from './TopBar';
+import { PublishMenu } from './PublishMenu';
+import { DemoBanner } from './DemoBanner';
+import { Canvas } from './canvas/Canvas';
+import { CardRegistryProvider } from './canvas/ThreadOverlay';
+import { Inspector } from './inspector/Inspector';
+
+function BuilderPreview({ doc }: { doc: FormDefinition }) {
+    const fill = useFillState(doc);
+    const [checked, setChecked] = useState<'ok' | 'invalid' | null>(null);
+    return (
+        <div className="bldr-preview">
+            <p className="bldr-preview-banner mono">Preview · answers here aren't saved</p>
+            {doc.title !== '' && <h1 className="bldr-preview-title">{doc.title}</h1>}
+            {doc.description !== undefined && <p className="bldr-preview-desc">{doc.description}</p>}
+            <ErrorSummary errors={fill.summaryErrors} definition={doc} />
+            <FormRenderer
+                definition={doc}
+                answers={fill.answers}
+                onAnswer={(id, value) => {
+                    setChecked(null);
+                    fill.setAnswer(id, value);
+                }}
+                errors={fill.errors}
+            />
+            <button
+                type="button"
+                className="bldr-btn bldr-btn-accent"
+                onClick={() => setChecked(fill.validate() ? 'ok' : 'invalid')}
+            >
+                Submit
+            </button>
+            {checked === 'ok' && (
+                <p className="bldr-hint mono">valid · a real respondent could submit this</p>
+            )}
+        </div>
+    );
+}
+
+function startSettling(): boolean {
+    try {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+        if (sessionStorage.getItem('sundew:settled') !== null) return false;
+        sessionStorage.setItem('sundew:settled', '1');
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function BuilderSessionApp({ formId }: { formId: string }) {
+    const b = useBuilderDoc(formId);
+    const [preview, setPreview] = useState(false);
+    const [publishOpen, setPublishOpen] = useState(false);
+    const [autoPublish, setAutoPublish] = useState(false);
+    const [inspectorOpen, setInspectorOpen] = useState(false);
+    const [settling, setSettling] = useState(startSettling);
+
+    useEffect(() => {
+        if (!settling) return;
+        const timer = window.setTimeout(() => setSettling(false), 1400);
+        return () => window.clearTimeout(timer);
+    }, [settling]);
+
+    // Global undo/redo. Handled even when focus sits in an input, so the app's
+    // document history wins over the browser's native text-field undo.
+    const { undo, redo } = b;
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return;
+            event.preventDefault();
+            if (event.shiftKey) redo();
+            else undo();
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [undo, redo]);
+
+    // Post-claim intent: sign-in was triggered from Publish, so keep going.
+    useEffect(() => {
+        if (b.isLocal || !b.ready) return;
+        try {
+            if (sessionStorage.getItem('sundew:intent') === 'publish') {
+                sessionStorage.removeItem('sundew:intent');
+                setAutoPublish(true);
+                setPublishOpen(true);
+            }
+        } catch {
+            // best-effort
+        }
+    }, [b.isLocal, b.ready]);
+
+    if (b.loadError) {
+        return (
+            <div className="bldr bldr-empty">
+                <p className="mono">Could not load this form.</p>
+                <a href="/forms">Back to your forms</a>
+            </div>
+        );
+    }
+    if (!b.ready) {
+        return (
+            <div className="bldr bldr-empty">
+                <p className="mono">Loading…</p>
+            </div>
+        );
+    }
+
+    const publishMenu = (
+        <PublishMenu
+            open={publishOpen}
+            onClose={() => {
+                setPublishOpen(false);
+                setAutoPublish(false);
+            }}
+            isLocal={b.isLocal}
+            formId={formId}
+            doc={b.doc}
+            status={b.serverMeta?.status ?? null}
+            slug={b.serverMeta?.slug ?? null}
+            publishedVersion={b.serverMeta?.publishedVersion ?? null}
+            autoStart={autoPublish}
+            onPublished={b.updateServerMeta}
+        />
+    );
+
+    return (
+        <CardRegistryProvider>
+            <div className={settling ? 'bldr bldr-settling-root' : 'bldr'}>
+                <TopBar
+                    title={b.doc.title}
+                    dispatch={b.dispatch}
+                    canUndo={b.canUndo}
+                    canRedo={b.canRedo}
+                    onUndo={b.undo}
+                    onRedo={b.redo}
+                    preview={preview}
+                    onTogglePreview={() => setPreview((v) => !v)}
+                    saveState={b.saveState}
+                    lastSavedAt={b.lastSavedAt}
+                    onReloadConflict={() => void b.reloadFromServer()}
+                    hasEdits={b.hasEdits}
+                    publishOpen={publishOpen}
+                    onPublishToggle={() => setPublishOpen((v) => !v)}
+                    publishMenu={publishMenu}
+                />
+                <div className="bldr-main">
+                    <div className="bldr-canvas-col">
+                        {b.isLocal && !preview && <DemoBanner />}
+                        {preview ? (
+                            <BuilderPreview doc={b.doc} />
+                        ) : (
+                            <Canvas
+                                doc={b.doc}
+                                dispatch={b.dispatch}
+                                selection={b.selection}
+                                onSelect={b.select}
+                                settling={settling}
+                            />
+                        )}
+                    </div>
+                    {!preview && (
+                        <>
+                            <Inspector
+                                doc={b.doc}
+                                selection={b.selection}
+                                dispatch={b.dispatch}
+                                onSelect={b.select}
+                                open={inspectorOpen}
+                                onClose={() => setInspectorOpen(false)}
+                            />
+                            <button
+                                type="button"
+                                className="bldr-inspector-toggle mono"
+                                aria-expanded={inspectorOpen}
+                                onClick={() => setInspectorOpen((v) => !v)}
+                            >
+                                Edit selection
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        </CardRegistryProvider>
+    );
+}
+
+// Keyed on formId so the claim flow's route replace (local-* -> server id)
+// remounts with fresh reducer + persistence state.
+const BuilderApp: FC<{ formId: string }> = ({ formId }) => (
+    <BuilderSessionApp key={formId} formId={formId} />
+);
+
+export default BuilderApp;

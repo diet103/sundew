@@ -18,6 +18,7 @@ jobs:
             - run: npx tsc --noEmit
             - run: npx vitest run
             - run: npx vite build
+            - run: npm run check:size
             # Content check: patterns come from a repo secret so the list itself
             # never appears in the public repo. Skipped when the secret is unset.
             - name: Content check

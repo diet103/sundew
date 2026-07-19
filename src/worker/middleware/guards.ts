@@ -36,7 +36,12 @@ export const csrfProtect: MiddlewareHandler<AppEnv> = async (c, next) => {
         if (!origin || origin !== new URL(c.req.url).origin) {
             return c.json({ error: 'badOrigin' }, 403);
         }
-        if (c.req.raw.body !== null) {
+        // workerd surfaces a non-null (empty) body stream for Content-Length: 0
+        // requests, so presence must be judged from the headers, not req.body.
+        const hasBody =
+            (c.req.header('Content-Length') ?? '0') !== '0' ||
+            c.req.header('Transfer-Encoding') !== undefined;
+        if (hasBody) {
             const contentType = c.req.header('Content-Type') ?? '';
             if (!contentType.toLowerCase().startsWith('application/json')) {
                 return c.json({ error: 'badContentType' }, 415);

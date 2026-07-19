@@ -1,0 +1,959 @@
+/* ===========================================================================
+   Builder chrome — everything on tokens. Fraunces appears ONLY on the wordmark
+   and the form-title input; crimson ONLY on the PublishMenu live dot.
+   =========================================================================== */
+
+.bldr {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sd-canvas-bg);
+}
+
+.bldr-empty {
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--muted);
+}
+
+/* ---- Top bar -------------------------------------------------------------- */
+
+.bldr-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.45rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    background-color: var(--gray-999_40);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.bldr-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-decoration: none;
+    color: var(--gray-0);
+    flex-shrink: 0;
+}
+
+.bldr-brand svg {
+    width: 1.4em;
+    height: 1.4em;
+}
+
+.bldr-wordmark {
+    font-family: var(--font-brand);
+    font-weight: 380;
+    font-size: var(--text-lg);
+    letter-spacing: -0.018em;
+}
+
+.bldr-form-title {
+    font-family: var(--font-brand);
+    font-weight: 380;
+    font-size: var(--text-lg);
+    color: var(--gray-0);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 0.1em 0.2em;
+    flex: 0 1 22rem;
+    min-width: 6rem;
+}
+
+.bldr-form-title:hover {
+    border-bottom-color: var(--rule);
+}
+
+.bldr-form-title:focus {
+    border-bottom-color: var(--accent-regular);
+    outline: none;
+}
+
+.bldr-topbar-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+/* ---- Buttons -------------------------------------------------------------- */
+
+.bldr-btn {
+    font-size: var(--text-base);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.3em 0.8em;
+    color: var(--gray-0);
+    cursor: pointer;
+}
+
+.bldr-btn:hover:not(:disabled) {
+    border-color: var(--accent-regular);
+}
+
+.bldr-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.bldr-btn-quiet {
+    color: var(--gray-200);
+}
+
+.bldr-btn-accent {
+    border-color: var(--accent-regular);
+    color: var(--accent-regular);
+}
+
+.bldr-btn-accent:hover:not(:disabled) {
+    background-color: var(--accent-overlay);
+}
+
+.bldr-btn[aria-pressed='true'] {
+    border-color: var(--accent-regular);
+    color: var(--accent-regular);
+    background-color: var(--accent-subtle-overlay);
+}
+
+.bldr-icon-btn,
+.sd-drag {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--muted);
+    padding: 0.15em 0.4em;
+    cursor: pointer;
+    line-height: 1.2;
+}
+
+.bldr-icon-btn:hover:not(:disabled),
+.sd-drag:hover {
+    color: var(--gray-0);
+    border-color: var(--rule);
+}
+
+.bldr-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.sd-drag {
+    cursor: grab;
+    touch-action: none;
+}
+
+.sd-drag:active {
+    cursor: grabbing;
+}
+
+/* ---- Save pill ------------------------------------------------------------ */
+
+.bldr-savepill {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.bldr-savepill-btn {
+    font: inherit;
+    color: var(--link-color);
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ---- Popovers (publish, save-your-work) ----------------------------------- */
+
+.bldr-publish-wrap,
+.bldr-account {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bldr-popover {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    right: 0;
+    z-index: 40;
+    width: min(24rem, calc(100vw - 2rem));
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    font-size: var(--text-base);
+}
+
+.bldr-pop-title {
+    font-size: var(--text-xl);
+}
+
+.bldr-pop-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.bldr-live {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    color: var(--gray-0);
+}
+
+.bldr-live-dot {
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    background-color: var(--sd-live);
+    flex-shrink: 0;
+}
+
+.bldr-live-dot.is-closed {
+    background-color: transparent;
+    border: 1px solid var(--muted);
+}
+
+.bldr-share {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bldr-share-url {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    background-color: var(--gray-900);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.35em 0.55em;
+    font-size: var(--text-sm);
+}
+
+.bldr-problems {
+    margin: 0;
+    padding-left: 1.1em;
+    color: var(--gray-0);
+}
+
+.bldr-unpub {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 0.7rem;
+}
+
+.bldr-avatar {
+    width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+}
+
+.bldr-account-name {
+    color: var(--muted);
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---- Main layout ---------------------------------------------------------- */
+
+.bldr-main {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    min-height: 0;
+}
+
+.bldr-canvas-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.bldr-demo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.7rem;
+    max-width: 46rem;
+    margin: 1rem auto 0;
+    padding: 0.5rem 0.9rem 0.5rem calc(56px + 0.9rem);
+    color: var(--muted);
+}
+
+/* The 56px left padding is the thread gutter — lanes live inside it. */
+.bldr-canvas {
+    position: relative;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem 7rem 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.bldr-form-desc {
+    color: var(--muted);
+    max-width: 60ch;
+    margin-bottom: 0.5rem;
+    cursor: default;
+}
+
+/* ---- Section cards -------------------------------------------------------- */
+
+.bldr-scard {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    background-color: transparent;
+}
+
+.bldr-scard.is-selected {
+    border-left: 2px solid var(--accent-regular);
+    padding-left: calc(1.1rem - 1px);
+}
+
+.bldr-shead {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bldr-stitle {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 0.1em 0;
+    color: var(--muted);
+}
+
+.bldr-stitle:hover {
+    border-bottom-color: var(--rule);
+}
+
+.bldr-stitle:focus {
+    border-bottom-color: var(--accent-regular);
+    outline: none;
+}
+
+.bldr-sdesc {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    padding: 0.05em 0;
+    color: var(--gray-200);
+    font-size: var(--text-base);
+}
+
+.bldr-sdesc:hover {
+    border-bottom-color: var(--rule);
+}
+
+.bldr-sdesc:focus {
+    border-bottom-color: var(--accent-regular);
+    outline: none;
+}
+
+.bldr-sactions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.bldr-add-section {
+    align-self: stretch;
+    margin: 0.35rem 0;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed var(--rule);
+    color: var(--muted);
+    padding: 0.45em 0 0.15em;
+    cursor: pointer;
+}
+
+.bldr-add-section:hover {
+    color: var(--accent-regular);
+    border-top-color: var(--accent-regular);
+}
+
+/* ---- Question cards ------------------------------------------------------- */
+
+.bldr-qlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.bldr-qcard {
+    --settle-o: 1;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.7rem 0.95rem 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    cursor: pointer;
+    opacity: var(--settle-o);
+}
+
+.bldr-qcard.is-selected {
+    border-left: 2px solid var(--accent-regular);
+    padding-left: calc(0.95rem - 1px);
+    cursor: default;
+}
+
+.bldr-qcard.is-dormant,
+.bldr-scard.is-dormant {
+    --settle-o: 0.55;
+    opacity: var(--settle-o);
+    border-style: dashed;
+}
+
+.bldr-scard.is-dormant {
+    --settle-o: 0.65;
+}
+
+.bldr-qcard.sd-dragging,
+.bldr-scard.sd-dragging,
+.bldr-optrow.sd-dragging {
+    opacity: 0.55;
+    border-color: var(--accent-regular);
+    border-style: solid;
+    z-index: 10;
+}
+
+.bldr-qtop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.bldr-qmeta {
+    color: var(--gray-300);
+    font-size: var(--text-sm);
+}
+
+.bldr-qactions {
+    display: inline-flex;
+    gap: 0.15rem;
+}
+
+.bldr-qbody {
+    min-width: 0;
+}
+
+.bldr-qbody.is-headless .sd-label {
+    display: none;
+}
+
+.bldr-qedit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.bldr-inline-title {
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--gray-0);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--rule);
+    border-radius: 0;
+    padding: 0.1em 0;
+}
+
+.bldr-inline-title:focus {
+    border-bottom-color: var(--accent-regular);
+    outline: none;
+}
+
+.bldr-inline-desc {
+    font-size: var(--text-base);
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    border-radius: 0;
+    padding: 0.05em 0;
+}
+
+.bldr-inline-desc:hover,
+.bldr-inline-desc:focus {
+    border-bottom-color: var(--rule);
+    outline: none;
+}
+
+.bldr-tag {
+    align-self: flex-start;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    padding: 0.1em 0.5em;
+}
+
+.bldr-tag.is-broken {
+    color: var(--gray-0);
+    border-style: solid;
+}
+
+/* Canvas copies of the runtime form controls: keep them compact and calm. */
+.bldr-canvas .sd-label {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-0);
+}
+
+.bldr-canvas .sd-question-desc {
+    color: var(--muted);
+    font-size: var(--text-base);
+    margin-bottom: 0.3rem;
+}
+
+.bldr-canvas .sd-options,
+.bldr-canvas fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.bldr-canvas .sd-option {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.12em 0;
+}
+
+.bldr-canvas .sd-input,
+.bldr-canvas .sd-textarea,
+.bldr-canvas .sd-select {
+    max-width: 28rem;
+    width: 100%;
+}
+
+.sd-required {
+    text-decoration: none;
+    color: var(--accent-regular);
+}
+
+/* ---- Thread overlay ------------------------------------------------------- */
+
+.bldr-threads {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.bldr-threads.is-hidden {
+    opacity: 0;
+}
+
+.bldr-thread .bldr-thread-line {
+    fill: none;
+    stroke: var(--sd-thread);
+    stroke-width: 1;
+    opacity: 0.85;
+    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.bldr-thread .bldr-thread-dot {
+    fill: var(--sd-thread);
+    opacity: 0.85;
+    transition: opacity 0.15s ease;
+}
+
+.bldr-threads.has-hot .bldr-thread:not(.is-hot) .bldr-thread-line,
+.bldr-threads.has-hot .bldr-thread:not(.is-hot) .bldr-thread-dot {
+    opacity: 0.35;
+}
+
+.bldr-thread.is-hot .bldr-thread-line {
+    stroke-width: 2;
+    opacity: 1;
+}
+
+.bldr-thread.is-hot .bldr-thread-dot {
+    opacity: 1;
+}
+
+.bldr-thread.is-broken .bldr-thread-line {
+    stroke-dasharray: 5 4;
+    opacity: 0.6;
+}
+
+/* ---- Load moment ---------------------------------------------------------- */
+
+.bldr-settling .bldr-qcard,
+.bldr-settling .bldr-scard {
+    opacity: 0;
+    transform: translateY(4px);
+    animation: bldr-settle 300ms ease forwards;
+    animation-delay: calc(var(--settle-i, 0) * 50ms);
+}
+
+@keyframes bldr-settle {
+    to {
+        opacity: var(--settle-o, 1);
+        transform: none;
+    }
+}
+
+.bldr-threads.is-settling .bldr-thread:not(.is-broken) .bldr-thread-line {
+    stroke-dashoffset: 1;
+    animation: bldr-thread-draw 550ms ease 420ms forwards;
+}
+
+@keyframes bldr-thread-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.bldr-threads.is-settling .bldr-thread-dot {
+    opacity: 0;
+    animation: bldr-fade-in 200ms ease 940ms forwards;
+}
+
+.bldr-settling-root .bldr-savepill {
+    opacity: 0;
+    animation: bldr-fade-in 240ms ease 1050ms forwards;
+}
+
+@keyframes bldr-fade-in {
+    to {
+        opacity: 0.85;
+    }
+}
+
+/* ---- Add-question menu ---------------------------------------------------- */
+
+.bldr-addq {
+    position: relative;
+    align-self: flex-start;
+}
+
+.bldr-menu {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    z-index: 20;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    min-width: 9rem;
+    padding: 0.3rem;
+}
+
+.bldr-menu-item {
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4em 0.6em;
+    color: var(--gray-0);
+    cursor: pointer;
+}
+
+.bldr-menu-item:hover {
+    background-color: var(--accent-overlay);
+}
+
+/* ---- Inspector ------------------------------------------------------------ */
+
+.bldr-inspector {
+    width: 320px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--rule);
+    padding: 1rem 1.1rem 3rem;
+    position: sticky;
+    top: 3.05rem;
+    align-self: flex-start;
+    max-height: calc(100dvh - 3.05rem);
+    overflow-y: auto;
+    background-color: var(--sd-canvas-bg);
+}
+
+.bldr-inspector-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.bldr-inspector-title {
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    letter-spacing: 0.04em;
+    color: var(--gray-0);
+    font-weight: 400;
+}
+
+.bldr-inspector-close {
+    display: none;
+}
+
+.bldr-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.bldr-panel-sub {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: var(--text-sm);
+    font-weight: 400;
+    margin-top: 0.9rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 0.7rem;
+}
+
+.bldr-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.bldr-field-label {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    letter-spacing: 0.08em;
+}
+
+.bldr-field input,
+.bldr-field textarea,
+.bldr-field select {
+    font-size: var(--text-base);
+}
+
+.bldr-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.bldr-btnrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.bldr-hint {
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+.bldr-optlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.bldr-optrow {
+    border-radius: 4px;
+}
+
+.bldr-optrow-main {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.bldr-optrow-main input {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-base);
+    padding: 0.3em 0.5em;
+}
+
+.bldr-optrow .bldr-hint {
+    margin-left: 2rem;
+}
+
+.bldr-logic {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.bldr-logic-mode {
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 0.9rem;
+    font-size: var(--text-base);
+}
+
+.bldr-logic-mode label {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+}
+
+.bldr-rule {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.3rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.bldr-rule select {
+    grid-column: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    padding: 0.3em 0.4em;
+}
+
+.bldr-rule .bldr-icon-btn {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.bldr-rule .bldr-hint {
+    grid-column: 1 / -1;
+}
+
+/* ---- Preview -------------------------------------------------------------- */
+
+.bldr-preview {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+}
+
+.bldr-preview-banner {
+    color: var(--muted);
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 0.35em 0.7em;
+    align-self: flex-start;
+}
+
+.bldr-preview-title {
+    font-size: var(--text-3xl);
+}
+
+.bldr-preview-desc {
+    color: var(--muted);
+    max-width: 60ch;
+}
+
+.bldr-preview .bldr-btn {
+    align-self: flex-start;
+}
+
+.bldr-preview .sd-section {
+    display: block;
+    margin-bottom: 1.2rem;
+}
+
+.bldr-preview .sd-questions {
+    margin-top: 0.9rem;
+}
+
+/* ---- Small screens: inspector becomes a bottom sheet ---------------------- */
+
+.bldr-inspector-toggle {
+    display: none;
+}
+
+@media (max-width: 50em) {
+    .bldr-canvas {
+        padding-left: 44px;
+    }
+
+    .bldr-inspector {
+        position: fixed;
+        inset: auto 0 0 0;
+        width: auto;
+        max-height: 70dvh;
+        border-left: none;
+        border-top: 1px solid var(--rule);
+        background-color: var(--gray-999);
+        z-index: 45;
+        transform: translateY(100%);
+        transition: transform 0.25s ease;
+        padding-bottom: 4.5rem;
+    }
+
+    .bldr-inspector.is-open {
+        transform: translateY(0);
+    }
+
+    .bldr-inspector-close {
+        display: inline-block;
+    }
+
+    .bldr-inspector-toggle {
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 44;
+        background-color: var(--gray-999);
+        border: none;
+        border-top: 1px solid var(--rule);
+        color: var(--gray-0);
+        padding: 0.75em 1rem;
+        text-align: center;
+        cursor: pointer;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bldr-inspector {
+        transition: none;
+    }
+}
