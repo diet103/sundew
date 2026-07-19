@@ -182,6 +182,17 @@ strong {
     line-height: 1;
 }
 
+/* Even with line-height: 1 the label is centered by its ascent+descent
+   metrics, so a descenderless word ("Form", "Publish") reads ~1.5px high in
+   the button because the reserved descender space below it is empty. Trim the
+   label's box to cap-height/baseline (it's a flex child, so it's blockified
+   and text-box applies) — now the caps that carry the visual weight sit dead
+   center, and the icon centers on them. Browsers without text-box fall back
+   to line-box centering. */
+.with-ico .ico-label {
+    text-box: trim-both cap alphabetic;
+}
+
 /* Small-caps-style eyebrow / catalog tag. */
 .eyebrow {
     font-family: var(--font-mono);

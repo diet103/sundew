@@ -521,7 +521,7 @@ export function SectionListPanel({
                     onClick={() => store.getState().setReorderMode(!reorderMode)}
                 >
                     <ListReorderIcon />
-                    {reorderMode ? 'Done' : 'Reorder'}
+                    <span className="ico-label">{reorderMode ? 'Done' : 'Reorder'}</span>
                 </button>
                 <button
                     type="button"

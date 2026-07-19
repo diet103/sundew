@@ -166,7 +166,7 @@ export function PublishMenu({
                             onClick={copyUrl}
                         >
                             <CopyIcon />
-                            {copied ? 'copied' : 'Copy'}
+                            <span className="ico-label">{copied ? 'copied' : 'Copy'}</span>
                         </button>
                     </div>
                 )}

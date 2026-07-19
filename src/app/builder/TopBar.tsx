@@ -110,7 +110,7 @@ export function TopBar({
                     onClick={onTogglePreview}
                 >
                     <EyeIcon />
-                    Preview
+                    <span className="ico-label">Preview</span>
                 </button>
                 <SavePill
                     state={saveState}
@@ -134,7 +134,7 @@ export function TopBar({
                         onClick={onPublishToggle}
                     >
                         <SendIcon />
-                        Publish
+                        <span className="ico-label">Publish</span>
                     </button>
                     {publishMenu}
                 </div>
@@ -150,7 +150,7 @@ export function TopBar({
                             onClick={() => void signOut()}
                         >
                             <SignOutIcon />
-                            Sign out
+                            <span className="ico-label">Sign out</span>
                         </button>
                     </div>
                 ) : hasEdits ? (

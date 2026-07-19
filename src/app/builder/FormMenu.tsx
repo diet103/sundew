@@ -99,7 +99,7 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
             }}
         >
             {icon}
-            {label}
+            <span className="ico-label">{label}</span>
         </button>
     );
 
@@ -119,7 +119,7 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
                 onClick={() => setOpen((v) => !v)}
             >
                 <MenuIcon />
-                Form
+                <span className="ico-label">Form</span>
             </button>
             {open && (
                 <div className="bldr-menu bldr-menu-right" role="menu" aria-label="Form actions">

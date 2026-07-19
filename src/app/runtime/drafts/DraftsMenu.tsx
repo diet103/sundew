@@ -97,7 +97,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                     onClick={() => setOpen((v) => !v)}
                 >
                     <DraftsIcon />
-                    Drafts
+                    <span className="ico-label">Drafts</span>
                 </button>
                 {open && (
                     <div
@@ -118,7 +118,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                         >
                             <span className="with-ico">
                                 <SaveIcon />
-                                Save draft
+                                <span className="ico-label">Save draft</span>
                             </span>
                         </button>
                         <button
@@ -132,7 +132,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                         >
                             <span className="with-ico">
                                 <SaveIcon />
-                                Save as
+                                <span className="ico-label">Save as</span>
                             </span>
                         </button>
                         <button
@@ -146,7 +146,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                         >
                             <span className="with-ico">
                                 <ListIcon />
-                                View drafts
+                                <span className="ico-label">View drafts</span>
                             </span>
                         </button>
                         <button
@@ -160,7 +160,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                         >
                             <span className="with-ico">
                                 <PlusIcon />
-                                New draft
+                                <span className="ico-label">New draft</span>
                             </span>
                         </button>
                         <button
