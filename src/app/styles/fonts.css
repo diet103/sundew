@@ -1,0 +1,23 @@
+/* Self-hosted fonts (Latin subsets, woff2) — same faces as the Field Notebook
+   site; URLs rewritten for the app's /forms base path. */
+@font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/forms/fonts/fraunces-opsz.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Newsreader';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('/forms/fonts/newsreader-wght.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Spline Sans Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/forms/fonts/spline-sans-mono-400.woff2') format('woff2');
+}

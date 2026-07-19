@@ -1,0 +1,135 @@
+/* ===========================================================================
+   Sundew tokens — hand-copied from the Field Notebook design system
+   (resume-website/src/styles/global.css). Values must match that file
+   exactly; do not edit tokens here without changing the site first.
+   Theme mechanism mirrors the site: light is the base on :root, dark is
+   an override under :root.theme-dark (index.html ships class="theme-dark",
+   so dark is the default presentation, same as the site).
+   =========================================================================== */
+
+/* ---- LIGHT theme (default :root) — bone ground, charcoal ink ------------- */
+:root {
+    color-scheme: light;
+
+    /* Gray ramp: --gray-0 = strongest ink … --gray-999 = page background. */
+    --gray-0: #16171b;
+    --gray-50: #24262d;
+    --gray-100: #33363f;
+    --gray-200: #3e424b;
+    --gray-300: #5c636c; /* muted / metadata — 4.9:1 on bone */
+    --gray-400: #62676f; /* faint text — 4.56:1 on bone (AA) */
+    --gray-500: #8e939b; /* decorative only (separators are aria-hidden) */
+    --gray-600: #a7abb1;
+    --gray-700: #bec0bb;
+    --gray-800: #c9c4b8; /* rule / hairline / border */
+    --gray-900: #e4dfd6; /* faint near-bg fill */
+    --gray-999-basis: 37, 25%, 90%;
+    --gray-999_40: hsla(var(--gray-999-basis), 0.4);
+    --gray-999: #ece7de; /* page background (bone) */
+
+    --surface: #f3efe7; /* raised panel (lighter than bg) */
+    --rule: var(--gray-800);
+    --muted: var(--gray-300);
+
+    /* Accent — the one decision: the electric-blue shirt. Deepened for AA on bone. */
+    --accent-light: #2d8fbf;
+    --accent-regular: #136385; /* links / focus / active — 5.35:1 on bone */
+    --accent-dark: #0e4d6b;
+    --accent-press: #0e4d6b;
+    --accent-overlay: hsla(199, 74%, 30%, 0.14);
+    --accent-subtle-overlay: var(--accent-overlay);
+    --accent-text-over: #f7f9fb;
+
+    /* Crimson — rationed (<5%): live dot + one plate detail. Never body text. */
+    --crimson: #9e1b30;
+    --crimson-strong: #9e1b30;
+
+    --link-color: var(--accent-regular);
+
+    /* Restrained gradients (no gradient text anywhere). */
+    --gradient-subtle: linear-gradient(180deg, var(--surface), var(--gray-999));
+    --gradient-stroke: linear-gradient(180deg, var(--gray-700), var(--gray-800));
+
+    /* Shadows — used sparingly; the design avoids floating soft-shadow cards. */
+    --shadow-sm:
+        0 1px 2px rgba(22, 23, 27, 0.04), 0 2px 6px rgba(22, 23, 27, 0.05);
+    --shadow-md:
+        0 2px 6px rgba(22, 23, 27, 0.06), 0 12px 28px rgba(22, 23, 27, 0.08);
+    --shadow-lg:
+        0 4px 12px rgba(22, 23, 27, 0.08), 0 24px 56px rgba(22, 23, 27, 0.12);
+
+    /* Type scale */
+    --text-sm: 0.8125rem;
+    --text-base: 1rem;
+    --text-md: 1.125rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 2rem;
+    --text-3xl: 2.625rem;
+    --text-4xl: 3.25rem;
+    --text-5xl: clamp(2.75rem, 1.6rem + 5.2vw, 4.75rem);
+
+    /* Fonts */
+    --font-system:
+        system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+        Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-serif-fallback: Georgia, 'Times New Roman', 'Times', serif;
+    --font-body: 'Newsreader', var(--font-serif-fallback);
+    --font-brand: 'Fraunces', var(--font-serif-fallback);
+    --font-mono: 'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+    --theme-transition: 0.2s ease-in-out;
+}
+
+/* ---- DARK theme (default state) — charcoal ground, bone ink ------------- */
+:root.theme-dark {
+    color-scheme: dark;
+
+    --gray-0: #e9e5dc; /* ink (bone) */
+    --gray-50: #d5d1c8;
+    --gray-100: #c2beb6;
+    --gray-200: #b3afa7; /* body text on charcoal */
+    --gray-300: #9aa0a8; /* muted / metadata — ~7:1 on charcoal */
+    --gray-400: #828892;
+    --gray-500: #6a707a;
+    --gray-600: #545a63;
+    --gray-700: #3a3e47;
+    --gray-800: #2a2d34; /* rule / hairline / border */
+    --gray-900: #1a1c22; /* faint near-bg fill */
+    --gray-999-basis: 228, 10%, 10%;
+    --gray-999_40: hsla(var(--gray-999-basis), 0.4);
+    --gray-999: #16171b; /* page background (charcoal wall) */
+
+    --surface: #1e2026; /* raised panel (lighter than bg) */
+
+    --accent-light: #7cc6ec;
+    --accent-regular: #57b6e6; /* links / focus / active — 8.0:1 on charcoal */
+    --accent-dark: #9bd2f1;
+    --accent-press: #7cc6ec;
+    --accent-overlay: hsla(199, 74%, 62%, 0.18);
+    --accent-subtle-overlay: hsla(199, 74%, 62%, 0.14);
+    --accent-text-over: #0c1a22;
+
+    --crimson: #c8546a; /* lifted for the live dot on charcoal */
+    --crimson-strong: #8e1b2e;
+
+    --link-color: var(--accent-regular);
+
+    --gradient-subtle: linear-gradient(180deg, var(--surface), var(--gray-999));
+    --gradient-stroke: linear-gradient(180deg, var(--gray-700), var(--gray-800));
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 4px 14px rgba(0, 0, 0, 0.4), 0 30px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Sundew component-layer aliases -------------------------------------- */
+/* Semantic names only — always defined via the tokens above, never raw color,
+   so both themes resolve for free. */
+:root {
+    --sd-canvas-bg: var(--gray-999);
+    --sd-card-bg: var(--surface);
+    --sd-thread: var(--accent-regular);
+    --sd-live: var(--crimson);
+    --sd-focus: var(--accent-regular);
+}

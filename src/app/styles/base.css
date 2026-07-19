@@ -1,0 +1,223 @@
+/* ===========================================================================
+   Sundew base — reset, app-global type/color rules, small utilities, and the
+   baseline for the sd- runtime form classes. Component styles for the builder
+   and renderer live with their components, not here.
+   =========================================================================== */
+
+/* ---- Reset & base --------------------------------------------------------- */
+*,
+*::after,
+*::before {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+html,
+body {
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background-color: var(--gray-999);
+    color: var(--gray-200);
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+img,
+svg {
+    max-width: 100%;
+    height: auto;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+a:hover {
+    color: var(--accent-press);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: var(--font-brand);
+    font-weight: 380;
+    font-optical-sizing: auto;
+    line-height: 1.06;
+    letter-spacing: -0.018em;
+    color: var(--gray-0);
+}
+
+h1 {
+    font-size: var(--text-5xl);
+}
+h2 {
+    font-size: var(--text-4xl);
+}
+h3 {
+    font-size: var(--text-3xl);
+}
+h4 {
+    font-size: var(--text-2xl);
+}
+h5 {
+    font-size: var(--text-xl);
+}
+
+b,
+strong {
+    font-weight: 600;
+}
+
+/* Visible keyboard focus on every interactive element (quality floor). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--sd-focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+::selection {
+    background: var(--accent-overlay);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ---- Form controls -------------------------------------------------------- */
+/* Hairline aesthetic: flat surface, 1px rule, small radius. :where() keeps
+   specificity at zero so component styles can override freely. */
+:where(input, textarea, select, button) {
+    font: inherit;
+    color: inherit;
+}
+
+:where(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    textarea,
+    select
+) {
+    color: var(--gray-0);
+    background-color: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.55em 0.7em;
+}
+
+:where(input, textarea, select):focus {
+    border-color: var(--accent-regular);
+}
+
+:where(textarea) {
+    resize: vertical;
+}
+
+:where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+    accent-color: var(--accent-regular);
+}
+
+/* ---- Utilities ------------------------------------------------------------ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Monospace data voice: tabular figures so numbers align like a readout. */
+.mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Small-caps-style eyebrow / catalog tag. */
+.eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted, var(--gray-300));
+    font-feature-settings: 'tnum' 1;
+}
+
+/* ---- sd- runtime form classes (shared by fill page and builder canvas) ---- */
+.sd-section-title {
+    font-size: var(--text-2xl);
+}
+
+.sd-section-desc {
+    color: var(--muted);
+    max-width: 64ch;
+}
+
+.sd-questions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+/* Errors are ink with an accent underline — never crimson (that is reserved
+   for the live dot). */
+.sd-error {
+    color: var(--gray-0);
+    font-size: var(--text-base);
+    text-decoration: underline;
+    text-decoration-color: var(--accent-regular);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.22em;
+}
+
+.sd-rating {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sd-rating input[type='radio'] {
+    appearance: none;
+    width: 2.1em;
+    height: 2.1em;
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background-color: var(--surface);
+    cursor: pointer;
+}
+
+.sd-rating input[type='radio']:hover {
+    border-color: var(--accent-regular);
+}
+
+.sd-rating input[type='radio']:checked {
+    border-color: var(--accent-regular);
+    background-color: var(--accent-overlay);
+    box-shadow: inset 0 0 0 2px var(--accent-regular);
+}
