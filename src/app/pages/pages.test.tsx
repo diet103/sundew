@@ -53,7 +53,12 @@ afterEach(() => {
 
 describe('HomePage as a guest', () => {
     it('seeds a local specimen doc and replace-redirects into the editor', () => {
-        mockUseSession.mockReturnValue({ user: null, loading: false, refresh: async () => {} });
+        mockUseSession.mockReturnValue({
+            user: null,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
         const location = renderAt('/', <HomePage />);
 
         const keys: string[] = [];
@@ -71,7 +76,12 @@ describe('HomePage as a guest', () => {
     });
 
     it('lists multiple local docs instead of redirecting', () => {
-        mockUseSession.mockReturnValue({ user: null, loading: false, refresh: async () => {} });
+        mockUseSession.mockReturnValue({
+            user: null,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
         saveLocalDoc(guestDocKey('local-aaa'), specimenIntake());
         saveLocalDoc(guestDocKey('local-bbb'), emptyForm());
         const location = renderAt('/', <HomePage />);
@@ -112,7 +122,12 @@ describe('HomePage signed in', () => {
     ];
 
     it('renders catalog rows with status dots and a responses link', async () => {
-        mockUseSession.mockReturnValue({ user, loading: false, refresh: async () => {} });
+        mockUseSession.mockReturnValue({
+            user,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
         vi.mocked(api.listForms).mockResolvedValue(forms);
         renderAt('/', <HomePage />);
 
@@ -135,7 +150,12 @@ describe('HomePage signed in', () => {
     });
 
     it('deletes a form only after confirm', async () => {
-        mockUseSession.mockReturnValue({ user, loading: false, refresh: async () => {} });
+        mockUseSession.mockReturnValue({
+            user,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
         vi.mocked(api.listForms).mockResolvedValue(forms);
         vi.mocked(api.deleteForm).mockResolvedValue(undefined);
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -155,7 +175,12 @@ describe('HomePage signed in', () => {
     });
 
     it('optimistically removes a deleted form and rolls back when the delete fails', async () => {
-        mockUseSession.mockReturnValue({ user, loading: false, refresh: async () => {} });
+        mockUseSession.mockReturnValue({
+            user,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
         // First load resolves; any refetch after the failed delete hangs, so a
         // reappearing row can only come from the onError rollback.
         vi.mocked(api.listForms)

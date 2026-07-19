@@ -28,7 +28,16 @@ export type BuilderStore = ReturnType<typeof createBuilderStore>;
 export function createBuilderStore(initialDoc: FormDefinition) {
     return createStore<BuilderStoreState>()((set) => ({
         ...createInitialState(initialDoc),
-        dispatch: (action) => set((state) => builderReducer(state, action)),
+        // Replace (not merge) so states that OMIT optional keys (undo/redo drop
+        // `coalesceKey`) do not leak the previous value back in; Zustand's
+        // default shallow merge would keep a stale coalesce target alive after
+        // UNDO and corrupt history coalescing. Returning the same reference for
+        // reducer no-ops preserves the no-notification behavior.
+        dispatch: (action) =>
+            set((state) => {
+                const next = builderReducer(state, action);
+                return next === state ? state : { ...next, dispatch: state.dispatch };
+            }, true),
     }));
 }
 

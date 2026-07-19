@@ -49,7 +49,7 @@ export function PublishMenu({
 
     // Compare the working doc against the published snapshot to surface
     // "published vN · unpublished changes". Version snapshots are immutable,
-    // so the entry never goes stale; a successful publish seeds it below.
+    // so the entry never goes stale and is fetched at most once per version.
     const publishedDefQuery = useQuery({
         queryKey: ['forms', formId, 'versions', publishedVersion],
         queryFn: () => api.getVersion(formId, publishedVersion ?? 0),
@@ -78,9 +78,12 @@ export function PublishMenu({
         onSuccess: (res) => {
             if (res.ok) {
                 setProblems(null);
-                // The just-published snapshot IS the working doc; seed the
-                // cache so the comparison query never refetches it.
-                queryClient.setQueryData(['forms', formId, 'versions', res.version], doc);
+                // Do NOT seed ['forms', formId, 'versions', res.version] with
+                // the working doc here: the server snapshots its last-saved
+                // draft, which can lag the doc in this render if the user
+                // edited while the POST was in flight. The comparison query
+                // fetches the real snapshot once (immutable, staleTime
+                // Infinity), so it can never be seeded wrong.
                 invalidateFormStatus();
                 onPublished({ status: 'published', slug: res.slug, publishedVersion: res.version });
             } else {

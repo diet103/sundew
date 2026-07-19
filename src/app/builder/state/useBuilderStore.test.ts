@@ -33,6 +33,25 @@ describe('createBuilderStore', () => {
         expect(notified).toBe(2);
     });
 
+    it('drops the coalesce key across undo, so a retype pushes a fresh history entry', () => {
+        const store = createBuilderStore(emptyForm());
+
+        // Edit -> undo -> retype within the coalesce window. Undo's returned
+        // state omits `coalesceKey`; a merging `set` would leak the old
+        // 'meta:form' key, coalesce the retype into nothing, and leave
+        // history.past empty (undo dead). Replace-mode keeps it at 1.
+        store.getState().dispatch(setFormMeta({ title: 'One' }));
+        store.getState().dispatch(undo());
+        expect(store.getState().coalesceKey).toBeUndefined();
+
+        store.getState().dispatch(setFormMeta({ title: 'Two' }));
+        expect(store.getState().history.past).toHaveLength(1);
+        expect(store.getState().history.future).toHaveLength(0);
+
+        store.getState().dispatch(undo());
+        expect(store.getState().doc.title).toBe('');
+    });
+
     it('keeps dispatch working across HYDRATE (reducer rebuilds state from scratch)', () => {
         const store = createBuilderStore(emptyForm());
         store.getState().dispatch(setFormMeta({ title: 'Before' }));

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { api } from '@app/api/client';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import { SundewMark } from '@app/components/SundewMark';
@@ -45,7 +44,7 @@ export function TopBar({
     onPublishToggle,
     publishMenu,
 }: TopBarProps) {
-    const { user, refresh } = useSession();
+    const { user, signOut } = useSession();
     const [saveOpen, setSaveOpen] = useState(false);
     const saveRef = useRef<HTMLDivElement>(null);
 
@@ -127,9 +126,7 @@ export function TopBar({
                         <button
                             type="button"
                             className="bldr-btn bldr-btn-quiet"
-                            onClick={() => {
-                                void api.logout().then(() => refresh());
-                            }}
+                            onClick={() => void signOut()}
                         >
                             Sign out
                         </button>

@@ -86,7 +86,7 @@ function GuestWorkspace({ localKeys, onNewForm }: { localKeys: string[]; onNewFo
 
 function SignedInWorkspace({ userLabel }: { userLabel: string }) {
     const [, navigate] = useLocation();
-    const { refresh } = useSession();
+    const session = useSession();
     const queryClient = useQueryClient();
     const [localKeys, setLocalKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
     const [claiming, setClaiming] = useState(false);
@@ -154,14 +154,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
         }
     };
 
-    const signOut = async () => {
-        try {
-            await api.logout();
-        } catch {
-            // session cookie may already be gone; refresh regardless
-        }
-        await refresh();
-    };
+    const signOut = () => session.signOut();
 
     const formList = forms.data;
 

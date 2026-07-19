@@ -158,7 +158,11 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     };
 
     if (submissions.isPending) return <p className="mono quiet-notice">loading…</p>;
-    if (submissions.isError) {
+    // Error only replaces the inbox when nothing is cached: a failed
+    // fetchNextPage (or focus refetch) sets isError while the loaded pages
+    // remain in data, and those must stay on screen with Load more available
+    // as the retry path.
+    if (submissions.isError && items.length === 0) {
         return <p className="mono quiet-notice">Could not load responses.</p>;
     }
 

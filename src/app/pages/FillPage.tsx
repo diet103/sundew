@@ -162,9 +162,15 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
 export default function FillPage({ slug }: { slug: string }) {
     // 404 (null) and 410 ({ gone: true }) are data, not errors: they're stable
     // answers about the slug, so they cache and render without retry churn.
+    // staleTime 0 so a remount always re-checks the server (an unpublish shows
+    // the closed notice immediately, matching the old fetch-on-every-mount);
+    // focus refetches are off so a transient failure while the respondent is
+    // mid-fill can never yank the form out from under them.
     const fill = useQuery({
         queryKey: ['fill', slug],
         queryFn: () => api.getFill(slug),
+        staleTime: 0,
+        refetchOnWindowFocus: false,
     });
 
     if (fill.isPending) {
@@ -174,7 +180,10 @@ export default function FillPage({ slug }: { slug: string }) {
             </main>
         );
     }
-    if (fill.isError) {
+    // Only when there is nothing cached to render: a failed background
+    // refetch with data present keeps showing the form instead of collapsing
+    // an in-progress fill into the error screen.
+    if (fill.data === undefined) {
         return (
             <FillShell>
                 <p className="mono">Could not load this form. Refresh to try again.</p>

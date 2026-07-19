@@ -28,7 +28,12 @@ vi.mock('@app/api/client', () => ({
 }));
 
 vi.mock('@app/auth/useSession', () => ({
-    useSession: () => ({ user: null, loading: false, refresh: async () => {} }),
+    useSession: () => ({
+        user: null,
+        loading: false,
+        refresh: async () => {},
+        signOut: async () => {},
+    }),
 }));
 
 vi.mock('@app/auth/SignInButtons', () => ({
