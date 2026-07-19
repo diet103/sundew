@@ -15,19 +15,36 @@ jobs:
                   node-version: 22
                   cache: npm
             - run: npm ci
-            - run: npx tsc --noEmit
             - run: npx vitest run
-            - run: npx vite build
+            # npm run build = tsc --noEmit && vite build && postbuild; check:size
+            # reads the /forms asset layout that postbuild creates.
+            - run: npm run build
             - run: npm run check:size
             # Content check: patterns come from a repo secret so the list itself
             # never appears in the public repo. Skipped when the secret is unset.
+            # -q keeps matches (and case variants the secret masker would miss)
+            # out of the public Actions log.
             - name: Content check
               if: ${{ github.event_name == 'push' }}
               env:
                   BLOCKED_PATTERNS: ${{ secrets.BLOCKED_PATTERNS }}
               run: |
                   if [ -n "$BLOCKED_PATTERNS" ]; then
-                      if echo "$BLOCKED_PATTERNS" | grep -riwF -f - --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist .; then
+                      if echo "$BLOCKED_PATTERNS" | grep -qriwF -f - --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist .; then
                           echo "Blocked pattern found"; exit 1
                       fi
                   fi
+
+    e2e:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npx playwright install --with-deps chromium
+            # Self-bootstrapping: global setup provisions .dev.vars with the auth
+            # stub, and the webServer command runs the local D1 migrations.
+            - run: npm run e2e
