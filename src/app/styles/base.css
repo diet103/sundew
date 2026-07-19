@@ -171,11 +171,15 @@ strong {
 }
 
 /* Buttons that lead with an icon: center it against the label with a
-   fixed 0.4em gap. Inline-flex keeps them sitting on the text baseline. */
+   fixed 0.4em gap. line-height: 1 collapses the label's line box to its
+   glyph so align-items: center lands the icon on the text's optical middle
+   instead of the middle of the inherited 1.6 line box (which sits the icon
+   visibly low). */
 .with-ico {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
+    line-height: 1;
 }
 
 /* Small-caps-style eyebrow / catalog tag. */
