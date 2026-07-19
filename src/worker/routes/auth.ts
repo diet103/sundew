@@ -3,7 +3,7 @@ import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { GitHub, Google, decodeIdToken, generateCodeVerifier, generateState } from 'arctic';
 import { z } from 'zod';
-import type { ApiUser } from '@shared/api';
+import type { ApiUser, AuthConfig } from '@shared/api';
 import type { AppEnv } from '../env';
 import {
     clearSessionCookie,
@@ -169,6 +169,16 @@ function toApiUser(row: UserRow): ApiUser {
     return { id: row.id, name: row.name, email: row.email, avatarUrl: row.avatar_url };
 }
 
+// Which providers hold credentials here; the UI hides anchors that would
+// dead-end on a 503. The stub flag only matters when no provider is set.
+function authConfig(c: Context<AppEnv>): AuthConfig {
+    return {
+        google: typeof c.env.GOOGLE_CLIENT_ID === 'string' && c.env.GOOGLE_CLIENT_ID !== '',
+        github: typeof c.env.GITHUB_CLIENT_ID === 'string' && c.env.GITHUB_CLIENT_ID !== '',
+        devStub: c.env.E2E_AUTH_STUB === '1',
+    };
+}
+
 export const auth = new Hono<AppEnv>();
 
 auth.get('/auth/:provider/start', async (c) => {
@@ -243,9 +253,9 @@ auth.post('/auth/logout', async (c) => {
 
 auth.get('/me', async (c) => {
     const userId = c.get('userId');
-    if (!userId) return c.json({ user: null });
+    if (!userId) return c.json({ user: null, auth: authConfig(c) });
     const row = await getUserById(c.env.DB, userId);
-    return c.json({ user: row ? toApiUser(row) : null });
+    return c.json({ user: row ? toApiUser(row) : null, auth: authConfig(c) });
 });
 
 // Test-only sign-in used by Playwright; guarded by an env flag never set in production.

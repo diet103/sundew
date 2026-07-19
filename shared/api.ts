@@ -12,8 +12,16 @@ export interface ApiUser {
     avatarUrl: string | null;
 }
 
+/** Which sign-in paths this deployment actually supports. */
+export interface AuthConfig {
+    google: boolean;
+    github: boolean;
+    devStub: boolean;
+}
+
 export interface MeResponse {
     user: ApiUser | null;
+    auth: AuthConfig;
 }
 
 export interface FormSummary {

@@ -30,6 +30,7 @@ vi.mock('@app/api/client', () => ({
 vi.mock('@app/auth/useSession', () => ({
     useSession: () => ({
         user: null,
+        auth: { google: true, github: true, devStub: false },
         loading: false,
         refresh: async () => {},
         signOut: async () => {},

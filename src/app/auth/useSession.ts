@@ -1,14 +1,21 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApiUser, MeResponse } from '@shared/api';
+import type { ApiUser, AuthConfig, MeResponse } from '@shared/api';
 import { api } from '@app/api/client';
 
 export interface Session {
     user: ApiUser | null;
+    /** null while the first /me is in flight. */
+    auth: AuthConfig | null;
     loading: boolean;
     refresh: () => Promise<void>;
     signOut: () => Promise<void>;
 }
+
+// When /me itself is unreachable we can't know what's configured; keep
+// today's plain-anchor behavior (both providers shown) instead of hiding
+// sign-in on a degraded deployment.
+const FALLBACK_AUTH: AuthConfig = { google: true, github: true, devStub: false };
 
 /**
  * Who is signed in, straight from the query cache: every mounted useSession
@@ -42,13 +49,17 @@ export function useSession(): Session {
         } catch {
             // session cookie may already be gone; degrade to guest regardless
         }
-        queryClient.setQueryData<MeResponse>(['me'], { user: null });
+        queryClient.setQueryData<MeResponse>(['me'], (old) => ({
+            user: null,
+            auth: old?.auth ?? FALLBACK_AUTH,
+        }));
         queryClient.removeQueries({ queryKey: ['forms'] });
         await queryClient.invalidateQueries({ queryKey: ['me'] });
     }, [queryClient]);
 
     return {
         user: query.data?.user ?? null,
+        auth: query.data?.auth ?? (query.isError ? FALLBACK_AUTH : null),
         loading: query.isPending,
         refresh,
         signOut,

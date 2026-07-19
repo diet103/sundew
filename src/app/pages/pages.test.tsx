@@ -55,6 +55,7 @@ describe('HomePage as a guest', () => {
     it('seeds a local specimen doc and replace-redirects into the editor', () => {
         mockUseSession.mockReturnValue({
             user: null,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
@@ -78,6 +79,7 @@ describe('HomePage as a guest', () => {
     it('lists multiple local docs instead of redirecting', () => {
         mockUseSession.mockReturnValue({
             user: null,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
@@ -100,6 +102,7 @@ describe('HomePage as a guest', () => {
     it('deletes a guest form row only after confirm and drops its local key', () => {
         mockUseSession.mockReturnValue({
             user: null,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
@@ -151,6 +154,7 @@ describe('HomePage signed in', () => {
     it('renders catalog rows with status dots and a responses link', async () => {
         mockUseSession.mockReturnValue({
             user,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
@@ -179,6 +183,7 @@ describe('HomePage signed in', () => {
     it('deletes a form only after confirm', async () => {
         mockUseSession.mockReturnValue({
             user,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
@@ -204,6 +209,7 @@ describe('HomePage signed in', () => {
     it('optimistically removes a deleted form and rolls back when the delete fails', async () => {
         mockUseSession.mockReturnValue({
             user,
+            auth: { google: true, github: true, devStub: false },
             loading: false,
             refresh: async () => {},
             signOut: async () => {},
