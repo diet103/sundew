@@ -32,15 +32,15 @@ export function CheckboxField({
             {question.options.map((option) => {
                 const optionId = `${inputId}-${option.id}`;
                 return (
-                    <div key={option.id} className="sd-option">
+                    <label key={option.id} className="sd-option" htmlFor={optionId}>
                         <input
                             type="checkbox"
                             id={optionId}
                             checked={selected.includes(option.id)}
                             onChange={() => toggle(option.id)}
                         />
-                        <label htmlFor={optionId}>{option.label}</label>
-                    </div>
+                        <span className="sd-option-label">{option.label}</span>
+                    </label>
                 );
             })}
         </fieldset>

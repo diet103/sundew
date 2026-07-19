@@ -60,17 +60,19 @@ export function TopBar({
 
     return (
         <header className="bldr-topbar">
-            <Link href="/" className="bldr-brand">
-                <SundewMark />
-                <span className="bldr-wordmark">Sundew</span>
-            </Link>
-            <input
-                className="bldr-form-title"
-                aria-label="Form title"
-                placeholder="Untitled form"
-                value={title}
-                onChange={(event) => dispatch(setFormMeta({ title: event.target.value }))}
-            />
+            <div className="bldr-topbar-lead">
+                <Link href="/" className="bldr-brand">
+                    <SundewMark />
+                    <span className="bldr-wordmark">Sundew</span>
+                </Link>
+                <input
+                    className="bldr-form-title"
+                    aria-label="Form title"
+                    placeholder="Untitled form"
+                    value={title}
+                    onChange={(event) => dispatch(setFormMeta({ title: event.target.value }))}
+                />
+            </div>
             <div className="bldr-topbar-tools">
                 <button
                     type="button"

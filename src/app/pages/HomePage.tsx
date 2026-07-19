@@ -70,7 +70,7 @@ function GuestWorkspace({ localKeys, onNewForm }: { localKeys: string[]; onNewFo
                 })}
             </ul>
             <div className="catalog-actions-row">
-                <button type="button" className="accent-button" onClick={onNewForm}>
+                <button type="button" className="ghost-button" onClick={onNewForm}>
                     New form
                 </button>
             </div>
@@ -212,7 +212,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 </ul>
             )}
             <div className="catalog-actions-row">
-                <button type="button" className="accent-button" onClick={() => void newForm()}>
+                <button type="button" className="ghost-button" onClick={() => void newForm()}>
                     New form
                 </button>
             </div>

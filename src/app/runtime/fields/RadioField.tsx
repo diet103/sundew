@@ -26,7 +26,9 @@ export function RadioField({
             {question.options.map((option) => {
                 const optionId = `${inputId}-${option.id}`;
                 return (
-                    <div key={option.id} className="sd-option">
+                    // The whole row is the click target: the label wraps both
+                    // the styled control and its text.
+                    <label key={option.id} className="sd-option" htmlFor={optionId}>
                         <input
                             type="radio"
                             id={optionId}
@@ -34,8 +36,8 @@ export function RadioField({
                             checked={value === option.id}
                             onChange={() => onChange(option.id)}
                         />
-                        <label htmlFor={optionId}>{option.label}</label>
-                    </div>
+                        <span className="sd-option-label">{option.label}</span>
+                    </label>
                 );
             })}
         </fieldset>

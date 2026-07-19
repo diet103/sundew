@@ -81,7 +81,7 @@ describe('BuilderApp with a guest doc', () => {
         fireEvent.click(screen.getByRole('menuitem', { name: 'short text' }));
         const title = screen.getByRole('textbox', { name: 'Question title' });
         expect(title).toHaveFocus();
-        expect(screen.getByRole('heading', { name: 'Q-04 · shortText' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Q-04 · short text' })).toBeInTheDocument();
     });
 
     it('marks conditional sections dormant with a human-readable hint', () => {

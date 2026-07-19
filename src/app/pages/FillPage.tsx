@@ -33,10 +33,8 @@ function DemoBanner({ slug }: { slug: string }) {
     const reportHref = `mailto:grosswiler2@gmail.com?subject=Report%20a%20Sundew%20form&body=${encodeURIComponent(slug)}`;
     return (
         <div className="fill-banner mono">
-            <span>
-                This form was created by a visitor to Sundew, a form-builder demo. Never submit
-                passwords or sensitive data.
-            </span>{' '}
+            <span>Made by a visitor to Sundew · Never submit passwords or sensitive data</span>
+            {' · '}
             <a href={reportHref}>Report this form</a>
         </div>
     );

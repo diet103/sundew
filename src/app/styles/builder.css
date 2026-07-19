@@ -33,6 +33,14 @@
     -webkit-backdrop-filter: blur(10px);
 }
 
+.bldr-topbar-lead {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    flex: 1;
+    min-width: 0;
+}
+
 .bldr-brand {
     display: inline-flex;
     align-items: center;
@@ -66,6 +74,7 @@
     padding: 0.1em 0.2em;
     flex: 0 1 22rem;
     min-width: 6rem;
+    text-overflow: ellipsis;
 }
 
 .bldr-form-title:hover {
@@ -81,42 +90,50 @@
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    margin-left: auto;
     flex-wrap: wrap;
 }
 
 /* ---- Buttons -------------------------------------------------------------- */
 
+/* Quiet hairline ghost buttons: transparent, 1px rule, warm on approach. */
 .bldr-btn {
     font-size: var(--text-base);
     background: transparent;
     border: 1px solid var(--rule);
     border-radius: 4px;
     padding: 0.3em 0.8em;
-    color: var(--gray-0);
-    cursor: pointer;
-}
-
-.bldr-btn:hover:not(:disabled) {
-    border-color: var(--accent-regular);
-}
-
-.bldr-btn:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
-.bldr-btn-quiet {
     color: var(--gray-200);
+    cursor: pointer;
+    transition:
+        color 150ms ease,
+        border-color 150ms ease,
+        background-color 150ms ease;
 }
 
-.bldr-btn-accent {
+.bldr-btn:hover:not(:disabled),
+.bldr-btn:focus-visible {
     border-color: var(--accent-regular);
     color: var(--accent-regular);
 }
 
-.bldr-btn-accent:hover:not(:disabled) {
-    background-color: var(--accent-overlay);
+.bldr-btn:disabled {
+    color: var(--gray-600);
+    border-color: var(--rule);
+    cursor: default;
+}
+
+/* The one filled button per surface: Publish / Submit. */
+.bldr-btn-accent {
+    background-color: var(--accent-regular);
+    border-color: var(--accent-regular);
+    color: var(--accent-text-over);
+}
+
+.bldr-btn-accent:hover:not(:disabled),
+.bldr-btn-accent:focus-visible {
+    background-color: var(--accent-press);
+    border-color: var(--accent-press);
+    color: var(--accent-text-over);
 }
 
 .bldr-btn[aria-pressed='true'] {
@@ -130,10 +147,13 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: 4px;
-    color: var(--muted);
+    color: var(--gray-300);
     padding: 0.15em 0.4em;
     cursor: pointer;
     line-height: 1.2;
+    transition:
+        color 150ms ease,
+        border-color 150ms ease;
 }
 
 .bldr-icon-btn:hover:not(:disabled),
@@ -143,7 +163,7 @@
 }
 
 .bldr-icon-btn:disabled {
-    opacity: 0.35;
+    color: var(--gray-700);
     cursor: default;
 }
 
@@ -161,6 +181,11 @@
 .bldr-savepill {
     color: var(--muted);
     white-space: nowrap;
+}
+
+/* Two renderings, one visible per breakpoint (display:none stays silent to AT). */
+.bldr-savepill-short {
+    display: none;
 }
 
 .bldr-savepill-btn {
@@ -296,16 +321,17 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 0.7rem;
-    max-width: 46rem;
+    max-width: 45rem;
     margin: 1rem auto 0;
     padding: 0.5rem 0.9rem 0.5rem calc(56px + 0.9rem);
     color: var(--muted);
 }
 
-/* The 56px left padding is the thread gutter — lanes live inside it. */
+/* The 56px left padding is the thread gutter — lanes live inside it. The
+   column (gutter included) centers in whatever space the inspector leaves. */
 .bldr-canvas {
     position: relative;
-    max-width: 46rem;
+    max-width: 45rem;
     margin: 0 auto;
     padding: 1.25rem 1.25rem 7rem 56px;
     display: flex;
@@ -330,11 +356,14 @@
     flex-direction: column;
     gap: 0.55rem;
     background-color: transparent;
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease;
 }
 
+/* Selection = a hard inset accent bar; box-shadow so nothing shifts. */
 .bldr-scard.is-selected {
-    border-left: 2px solid var(--accent-regular);
-    padding-left: calc(1.1rem - 1px);
+    box-shadow: inset 2px 0 0 var(--accent-regular);
 }
 
 .bldr-shead {
@@ -426,11 +455,14 @@
     gap: 0.45rem;
     cursor: pointer;
     opacity: var(--settle-o);
+    transition:
+        border-color 150ms ease,
+        background-color 150ms ease,
+        box-shadow 150ms ease;
 }
 
 .bldr-qcard.is-selected {
-    border-left: 2px solid var(--accent-regular);
-    padding-left: calc(0.95rem - 1px);
+    box-shadow: inset 2px 0 0 var(--accent-regular);
     cursor: default;
 }
 
@@ -445,13 +477,16 @@
     --settle-o: 0.65;
 }
 
+/* Drag lift: barely-there scale plus the accent hairline; settles on drop. */
 .bldr-qcard.sd-dragging,
 .bldr-scard.sd-dragging,
 .bldr-optrow.sd-dragging {
-    opacity: 0.55;
+    opacity: 0.92;
+    scale: 1.01;
     border-color: var(--accent-regular);
     border-style: solid;
     z-index: 10;
+    position: relative;
 }
 
 .bldr-qtop {
@@ -579,6 +614,7 @@
     height: 100%;
     pointer-events: none;
     overflow: visible;
+    transition: opacity 150ms ease;
 }
 
 .bldr-threads.is-hidden {
@@ -618,47 +654,97 @@
     opacity: 0.6;
 }
 
-/* ---- Load moment ---------------------------------------------------------- */
+/* ---- Load moment (once per session; JS-gated on prefers-reduced-motion) ----
+   Order: cards settle (stagger), then threads draw, then the save pill ticks.
+   From-only keyframes with `both` fill animate INTO each element's computed
+   state, so dormant opacity and the settled layout need no duplication. */
 
 .bldr-settling .bldr-qcard,
 .bldr-settling .bldr-scard {
-    opacity: 0;
-    transform: translateY(4px);
-    animation: bldr-settle 300ms ease forwards;
+    animation: bldr-settle-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: calc(var(--settle-i, 0) * 50ms);
 }
 
-@keyframes bldr-settle {
-    to {
-        opacity: var(--settle-o, 1);
-        transform: none;
+@keyframes bldr-settle-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
     }
 }
 
 .bldr-threads.is-settling .bldr-thread:not(.is-broken) .bldr-thread-line {
-    stroke-dashoffset: 1;
-    animation: bldr-thread-draw 550ms ease 420ms forwards;
+    animation: bldr-thread-draw 550ms cubic-bezier(0.22, 1, 0.36, 1) 800ms both;
 }
 
 @keyframes bldr-thread-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+
     to {
         stroke-dashoffset: 0;
     }
 }
 
 .bldr-threads.is-settling .bldr-thread-dot {
-    opacity: 0;
-    animation: bldr-fade-in 200ms ease 940ms forwards;
+    animation: bldr-fade-in 200ms ease 1250ms both;
 }
 
 .bldr-settling-root .bldr-savepill {
-    opacity: 0;
-    animation: bldr-fade-in 240ms ease 1050ms forwards;
+    animation: bldr-fade-in 240ms ease 1400ms both;
 }
 
 @keyframes bldr-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+/* ---- Card grow-in / collapse-out ------------------------------------------ */
+/* Presentation-only wrappers around a card; the reducer state stays instant.
+   Grid-row 0fr->1fr is the one deliberate height animation in the builder. */
+
+.bldr-qgrow.is-new,
+.bldr-qgrow.is-exiting {
+    display: grid;
+    overflow: hidden;
+}
+
+.bldr-qgrow.is-new > .bldr-qcard,
+.bldr-qgrow.is-exiting > .bldr-qcard {
+    min-height: 0;
+}
+
+.bldr-qgrow.is-new {
+    animation: bldr-grow-in 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bldr-grow-in {
+    from {
+        grid-template-rows: 0fr;
+        opacity: 0;
+    }
+
     to {
-        opacity: 0.85;
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+}
+
+.bldr-qgrow.is-exiting {
+    animation: bldr-collapse-out 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    pointer-events: none;
+}
+
+@keyframes bldr-collapse-out {
+    from {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    to {
+        grid-template-rows: 0fr;
+        opacity: 0;
     }
 }
 
@@ -733,6 +819,11 @@
     display: none;
 }
 
+/* Remounted per selection (React key): the fade-in reads as a crossfade. */
+.bldr-inspector-body {
+    animation: bldr-fade-in 150ms ease both;
+}
+
 .bldr-panel {
     display: flex;
     flex-direction: column;
@@ -804,6 +895,14 @@
     gap: 0.3rem;
 }
 
+/* Fixed-width handles so every row's input starts on the same column. */
+.bldr-optrow-main .sd-drag {
+    width: 1.4rem;
+    flex-shrink: 0;
+    padding: 0.15em 0;
+    text-align: center;
+}
+
 .bldr-optrow-main input {
     flex: 1;
     min-width: 0;
@@ -811,8 +910,11 @@
     padding: 0.3em 0.5em;
 }
 
+/* "reveals N questions" microcopy: quiet, tucked under the option input. */
 .bldr-optrow .bldr-hint {
-    margin-left: 2rem;
+    color: var(--gray-400);
+    margin-left: calc(1.4rem + 0.3rem);
+    margin-top: 0.1rem;
 }
 
 .bldr-logic {
@@ -909,6 +1011,51 @@
 }
 
 @media (max-width: 50em) {
+    /* Two calm rows: mark + truncating title, then the compact controls. */
+    .bldr-topbar {
+        flex-wrap: wrap;
+        gap: 0.4rem 0.6rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .bldr-topbar-lead {
+        flex: 1 0 100%;
+        gap: 0.5rem;
+    }
+
+    .bldr-wordmark {
+        display: none;
+    }
+
+    .bldr-form-title {
+        flex: 1 1 auto;
+    }
+
+    .bldr-topbar-tools {
+        flex: 1 0 100%;
+        gap: 0.4rem;
+    }
+
+    .bldr-savepill-long {
+        display: none;
+    }
+
+    .bldr-savepill-short {
+        display: inline;
+    }
+
+    .bldr-publish-wrap {
+        margin-left: auto;
+    }
+
+    .bldr-account-name {
+        display: none;
+    }
+
+    .bldr-demo {
+        padding-left: calc(44px + 0.9rem);
+    }
+
     .bldr-canvas {
         padding-left: 44px;
     }

@@ -31,25 +31,33 @@ export function SavePill({ state, lastSavedAt, onReloadConflict }: SavePillProps
     }, [lastSavedAt]);
 
     const time = shownAt !== null ? fmtTime(shownAt) : null;
+    const shortTime = time !== null ? time.slice(0, 5) : null;
     let content: ReactNode;
+    // Compact variant for the small-screen top bar: just the time or one word.
+    let short: ReactNode;
     let title: string | undefined;
     switch (state) {
         case 'localSaved':
             content = time ? `Saved in this browser · ${time}` : 'Saved in this browser';
+            short = shortTime ?? 'Saved';
             title = 'This form lives in your browser storage. Sign in to keep it anywhere.';
             break;
         case 'idle':
             content = time ? `Saved · ${time}` : 'Saved';
+            short = shortTime ?? 'Saved';
             break;
         case 'dirty':
         case 'saving':
             content = 'Saving…';
+            short = 'Saving…';
             break;
         case 'error':
             content = 'Retrying…';
+            short = 'Retrying…';
             break;
         case 'offline':
             content = 'Offline · changes held';
+            short = 'Offline';
             break;
         case 'conflict':
             content = (
@@ -60,12 +68,20 @@ export function SavePill({ state, lastSavedAt, onReloadConflict }: SavePillProps
                     </button>
                 </>
             );
+            short = (
+                <button type="button" className="bldr-savepill-btn" onClick={onReloadConflict}>
+                    Reload
+                </button>
+            );
             break;
     }
 
+    // Exactly one variant is displayed per breakpoint; the display:none one
+    // stays out of the accessibility tree, so aria-live announces once.
     return (
         <span className="bldr-savepill mono" aria-live="polite" title={title}>
-            {content}
+            <span className="bldr-savepill-long">{content}</span>
+            <span className="bldr-savepill-short">{short}</span>
         </span>
     );
 }

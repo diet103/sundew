@@ -125,6 +125,32 @@
     cursor: default;
 }
 
+/* Quiet hairline ghost button: the default treatment for workspace actions. */
+.ghost-button {
+    background: transparent;
+    color: var(--gray-0);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.5em 1.1em;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition:
+        border-color 150ms ease,
+        color 150ms ease;
+}
+
+.ghost-button:hover {
+    border-color: var(--accent-regular);
+    color: var(--accent-regular);
+}
+
+.ghost-button:disabled {
+    color: var(--muted);
+    border-color: var(--rule);
+    cursor: default;
+}
+
 /* ---- Status dots ---------------------------------------------------------- */
 .status-dot {
     display: inline-block;
@@ -282,21 +308,31 @@
 /* ---- Fill page ------------------------------------------------------------ */
 .fill-shell-banner {
     /* clear the fixed demo banner */
-    padding-top: 3.25rem;
+    padding-top: 2.9rem;
 }
 
+/* A thin, quiet mono strip: page-colored, hairline underneath, muted voice. */
 .fill-banner {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 10;
-    padding: 0.45rem 1rem;
-    background-color: var(--sd-card-bg);
+    padding: 0.35rem 1rem;
+    background-color: var(--gray-999);
     border-bottom: 1px solid var(--rule);
     color: var(--muted);
     font-size: var(--text-sm);
+    letter-spacing: 0.01em;
     text-align: center;
+}
+
+.fill-banner a {
+    color: inherit;
+}
+
+.fill-banner a:hover {
+    color: var(--accent-press);
 }
 
 .fill-page {
@@ -318,10 +354,23 @@
 }
 
 .fill-page .sd-form {
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-    margin-top: 1.5rem;
+    margin-top: 1.75rem;
+}
+
+/* The page's one load moment: title leads, the sheet settles in behind it. */
+@keyframes fill-settle {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+.fill-title {
+    animation: fill-settle 350ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fill-page > :not(.fill-title, .fill-confirm) {
+    animation: fill-settle 400ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
 }
 
 .fill-submit-row {
@@ -350,6 +399,26 @@
 
 .fill-receipt {
     color: var(--muted);
+}
+
+/* Confirmation is this view's one moment: mark blooms, words settle after. */
+@keyframes confirm-mark-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+}
+
+.fill-confirm > .accent-mark {
+    animation: confirm-mark-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fill-confirm > .fill-confirm-message {
+    animation: fill-settle 400ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+.fill-confirm > .fill-receipt {
+    animation: fill-settle 400ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
 }
 
 .fill-closed {

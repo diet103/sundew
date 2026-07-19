@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { createContext, useContext, useLayoutEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { FormDefinition, Rule, Visibility } from '@shared/schema';
 import { findQuestion, hasOptions } from '@shared/schema';
 import { evaluateVisibility } from '@shared/visibility';
@@ -156,10 +156,16 @@ export function ThreadOverlay({ doc, containerRef, hot, hidden, settling }: Thre
         return specs;
     }, [doc]);
 
-    useLayoutEffect(() => {
+    // A plain effect (not layout): the container div is this overlay's parent,
+    // and React attaches a host ref only after its children's layout effects
+    // have run — measuring in a layout effect would always see a null ref on
+    // mount and silently render no threads.
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        let disposed = false;
         const measure = () => {
-            const container = containerRef.current;
-            if (!container) return;
+            if (disposed) return;
             const cRect = container.getBoundingClientRect();
             const next: ThreadPath[] = [];
             threads.forEach((spec, i) => {
@@ -197,12 +203,21 @@ export function ThreadOverlay({ doc, containerRef, hot, hidden, settling }: Thre
             setPaths(next);
         };
         measure();
-        const container = containerRef.current;
-        if (typeof ResizeObserver === 'undefined' || !container) return;
-        const observer = new ResizeObserver(measure);
-        observer.observe(container);
-        return () => observer.disconnect();
-    }, [threads, registry, containerRef]);
+        let observer: ResizeObserver | undefined;
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(measure);
+            observer.observe(container);
+        }
+        window.addEventListener('resize', measure);
+        // Webfont swaps shift card metrics without resizing the container.
+        document.fonts?.ready.then(measure).catch(() => {});
+        return () => {
+            disposed = true;
+            observer?.disconnect();
+            window.removeEventListener('resize', measure);
+        };
+        // `settling` re-measures once the load animation's translateY settles.
+    }, [threads, registry, containerRef, settling]);
 
     if (paths.length === 0) return null;
 

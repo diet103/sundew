@@ -85,7 +85,7 @@ export function PublishMenu({
                 setProblems(res.problems);
             }
         } catch {
-            setProblems(['Could not reach the server — try again']);
+            setProblems(['Could not reach the server · try again']);
         } finally {
             setBusy(false);
         }

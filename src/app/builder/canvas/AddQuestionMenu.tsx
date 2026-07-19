@@ -39,7 +39,7 @@ export function AddQuestionMenu({ sectionId, onAdd }: AddQuestionMenuProps) {
         >
             <button
                 type="button"
-                className="bldr-btn bldr-btn-quiet"
+                className="bldr-btn bldr-btn-quiet mono"
                 aria-haspopup="menu"
                 aria-expanded={open}
                 onClick={() => setOpen((v) => !v)}

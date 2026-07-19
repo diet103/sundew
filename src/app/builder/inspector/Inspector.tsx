@@ -3,6 +3,7 @@ import type { FormDefinition } from '@shared/schema';
 import type { BuilderAction } from '../state/actions';
 import type { Selection } from '../state/types';
 import { findQuestionWithSection, findSection, questionDisplayIndex } from '../state/selectors';
+import { QUESTION_TYPE_LABELS } from '../canvas/AddQuestionMenu';
 import { questionCardKey, sectionCardKey, useCardRegistry } from '../canvas/ThreadOverlay';
 import { FormSettings } from './FormSettings';
 import { SectionSettings } from './SectionSettings';
@@ -47,7 +48,7 @@ export function Inspector({ doc, selection, dispatch, onSelect, open, onClose }:
         const found = findQuestionWithSection(doc, selection.id);
         if (found) {
             const n = questionDisplayIndex(doc, selection.id);
-            heading = `Q-${String(n).padStart(2, '0')} · ${found.question.type}`;
+            heading = `Q-${String(n).padStart(2, '0')} · ${QUESTION_TYPE_LABELS[found.question.type]}`;
             body = (
                 <QuestionSettings
                     doc={doc}
@@ -58,6 +59,11 @@ export function Inspector({ doc, selection, dispatch, onSelect, open, onClose }:
             );
         }
     }
+
+    // Keyed on the selection so a change remounts the panel and its 150ms
+    // fade-in reads as a crossfade rather than an abrupt swap.
+    const bodyKey =
+        selection === null || selection.kind === 'form' ? 'form' : `${selection.kind}:${selection.id}`;
 
     return (
         <aside
@@ -76,7 +82,9 @@ export function Inspector({ doc, selection, dispatch, onSelect, open, onClose }:
                     <span aria-hidden="true">✕</span>
                 </button>
             </div>
-            {body}
+            <div className="bldr-inspector-body" key={bodyKey}>
+                {body}
+            </div>
         </aside>
     );
 }

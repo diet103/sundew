@@ -119,6 +119,7 @@ strong {
     border: 1px solid var(--rule);
     border-radius: 4px;
     padding: 0.55em 0.7em;
+    transition: border-color 150ms ease;
 }
 
 :where(input, textarea, select):focus {
@@ -165,35 +166,201 @@ strong {
 }
 
 /* ---- sd- runtime form classes (shared by fill page and builder canvas) ---- */
+/* Rhythm: section (hairline, 2.5rem apart) > question title (Newsreader 600,
+   text-md, ink) > description (text-base, muted) > control. Question spacing
+   lives INSIDE the reveal wrappers so conditional collapse animates the gap
+   away with the content. */
+
+.sd-section {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.4rem;
+    margin-top: 2.5rem;
+}
+
+.sd-form > .sd-reveal:first-child .sd-section {
+    margin-top: 0;
+}
+
 .sd-section-title {
-    font-size: var(--text-2xl);
+    font-family: var(--font-body);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.25;
+    color: var(--gray-0);
 }
 
 .sd-section-desc {
     color: var(--muted);
     max-width: 64ch;
+    margin-top: 0.4rem;
 }
 
 .sd-questions {
     list-style: none;
-    margin: 0;
+    margin: 1.5rem 0 0;
     padding: 0;
+}
+
+.sd-question-item + .sd-question-item > .sd-reveal-inner {
+    padding-top: 1.75rem;
+}
+
+.sd-question {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
-/* Errors are ink with an accent underline — never crimson (that is reserved
-   for the live dot). */
-.sd-error {
+.sd-question > .sd-input,
+.sd-question > .sd-textarea,
+.sd-question > .sd-select,
+.sd-question > .sd-options,
+.sd-question > .sd-rating {
+    margin-top: 0.25rem; /* 0.75rem from label/description to the control */
+}
+
+.sd-label {
+    display: block;
+    width: 100%;
+    font-size: var(--text-md);
+    font-weight: 600;
+    line-height: 1.35;
     color: var(--gray-0);
-    font-size: var(--text-base);
-    text-decoration: underline;
-    text-decoration-color: var(--accent-regular);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.22em;
 }
 
+.sd-question-desc {
+    color: var(--gray-300);
+    font-size: var(--text-base);
+    max-width: 64ch;
+}
+
+.sd-required {
+    text-decoration: none;
+    color: var(--accent-regular);
+}
+
+/* ---- Text-ish controls: width follows the expected answer ------------------ */
+.sd-input,
+.sd-select {
+    width: 100%;
+    max-width: 32ch;
+}
+
+.sd-input[data-format='date'] {
+    width: 17ch;
+}
+
+.sd-input[data-format='number'] {
+    width: 14ch;
+}
+
+.sd-textarea {
+    width: 100%;
+}
+
+.sd-char-count {
+    align-self: flex-end;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    font-feature-settings: 'tnum' 1;
+}
+
+/* ---- Option groups: quiet fieldsets, custom-drawn controls ----------------- */
+fieldset.sd-options,
+fieldset.sd-rating {
+    border: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+
+.sd-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45em;
+}
+
+.sd-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    cursor: pointer;
+}
+
+.sd-option-label {
+    transition: color 150ms ease;
+}
+
+.sd-option:hover .sd-option-label {
+    color: var(--gray-0);
+}
+
+.sd-option input[type='radio'],
+.sd-option input[type='checkbox'] {
+    appearance: none;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: calc(0.8em - 9px) 0 0; /* center on the first text line */
+    border: 1.5px solid var(--rule);
+    background-color: var(--surface);
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.sd-option input[type='radio'] {
+    border-radius: 50%;
+}
+
+.sd-option input[type='checkbox'] {
+    border-radius: 4px;
+}
+
+/* The mark is always present and scales in on check. */
+.sd-option input[type='radio']::before,
+.sd-option input[type='checkbox']::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-text-over);
+    transform: scale(0);
+    transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sd-option input[type='radio']::before {
+    border-radius: 50%;
+}
+
+.sd-option input[type='checkbox']::before {
+    width: 10px;
+    height: 10px;
+    clip-path: polygon(14% 44%, 0 65%, 40% 100%, 100% 16%, 80% 0%, 37% 62%);
+}
+
+.sd-option input:hover {
+    border-color: var(--accent-regular);
+}
+
+.sd-option input:checked {
+    border-color: var(--accent-regular);
+    background-color: var(--accent-regular);
+}
+
+.sd-option input:checked::before {
+    transform: scale(1);
+}
+
+.sd-options:disabled .sd-option,
+.sd-options:disabled .sd-option input {
+    cursor: default;
+}
+
+/* ---- Rating: a row of numbered scale buttons ------------------------------- */
 .sd-rating {
     display: flex;
     flex-wrap: wrap;
@@ -201,23 +368,170 @@ strong {
     gap: 0.5rem;
 }
 
-.sd-rating input[type='radio'] {
+.sd-rating-step {
+    position: relative;
+    display: inline-flex;
+}
+
+/* The real radio covers the circle invisibly: clicks, focus, and arrow-key
+   semantics stay native while the label draws the control. */
+.sd-rating-step input[type='radio'] {
     appearance: none;
-    width: 2.1em;
-    height: 2.1em;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     margin: 0;
-    border: 1px solid var(--rule);
+    border: none;
     border-radius: 50%;
-    background-color: var(--surface);
+    background: transparent;
     cursor: pointer;
 }
 
-.sd-rating input[type='radio']:hover {
-    border-color: var(--accent-regular);
+.sd-rating-num {
+    display: grid;
+    place-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background-color: var(--surface);
+    color: var(--gray-200);
+    cursor: pointer;
+    transition:
+        border-color 150ms ease,
+        background-color 150ms ease,
+        color 150ms ease;
 }
 
-.sd-rating input[type='radio']:checked {
+.sd-rating-step input:hover + .sd-rating-num {
     border-color: var(--accent-regular);
+    color: var(--gray-0);
+}
+
+.sd-rating-step input:focus-visible {
+    outline: none;
+}
+
+.sd-rating-step input:focus-visible + .sd-rating-num {
+    outline: 2px solid var(--sd-focus);
+    outline-offset: 3px;
+}
+
+.sd-rating-step input:checked + .sd-rating-num {
+    border-color: var(--accent-regular);
+    background-color: var(--accent-regular);
+    color: var(--accent-text-over);
+    animation: sd-rating-pop 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Filled-up-to feel: every step below the selected one takes a soft tint. */
+.sd-rating-step.is-below .sd-rating-num {
     background-color: var(--accent-overlay);
-    box-shadow: inset 0 0 0 2px var(--accent-regular);
+    color: var(--gray-0);
+}
+
+@keyframes sd-rating-pop {
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+.sd-rating-clear {
+    background: none;
+    border: none;
+    padding: 0 0.25rem;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    animation: sd-fade-slide-in 200ms ease-out;
+}
+
+.sd-rating-clear:hover {
+    color: var(--gray-0);
+}
+
+/* ---- Errors: ink with an accent underline — never crimson ------------------ */
+.sd-error {
+    color: var(--gray-0);
+    font-size: var(--text-base);
+    text-decoration: underline;
+    text-decoration-color: var(--accent-regular);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.22em;
+    animation: sd-fade-slide-in 200ms ease-out;
+}
+
+.sd-error-summary {
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--accent-regular);
+    border-radius: 4px;
+    background-color: var(--surface);
+    padding: 0.9rem 1.1rem;
+    margin: 1.25rem 0;
+    animation: sd-fade-slide-in 200ms ease-out;
+}
+
+.sd-error-summary-title {
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.35;
+    color: var(--gray-0);
+}
+
+.sd-error-summary ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.sd-error-summary li {
+    margin: 0.25rem 0;
+}
+
+@keyframes sd-fade-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+}
+
+/* ---- Conditional reveal (the showcase move) -------------------------------- */
+/* Entering content grows open via grid-template-rows 0fr -> 1fr + opacity;
+   leaving content collapses shut. Overflow is only clipped while animating so
+   steady-state focus rings never get cut. Reduced motion is handled twice:
+   the global clamp above zeroes the transitions, and Reveal.tsx mounts and
+   unmounts instantly. */
+.sd-reveal {
+    display: grid;
+    grid-template-rows: 1fr;
+}
+
+.sd-reveal > .sd-reveal-inner {
+    min-height: 0;
+}
+
+.sd-reveal-enter,
+.sd-reveal-exit {
+    grid-template-rows: 0fr;
+    opacity: 0;
+}
+
+.sd-reveal-enter > .sd-reveal-inner,
+.sd-reveal-opening > .sd-reveal-inner,
+.sd-reveal-exit > .sd-reveal-inner {
+    overflow: hidden;
+}
+
+.sd-reveal-opening {
+    transition:
+        grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 300ms ease-out;
+}
+
+.sd-reveal-exit {
+    transition:
+        grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 200ms ease-out;
 }

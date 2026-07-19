@@ -64,11 +64,13 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     const [inspectorOpen, setInspectorOpen] = useState(false);
     const [settling, setSettling] = useState(startSettling);
 
+    // The load-moment clock starts when the canvas actually mounts (b.ready),
+    // not when this component does, so a slow doc load can't eat the animation.
     useEffect(() => {
-        if (!settling) return;
-        const timer = window.setTimeout(() => setSettling(false), 1400);
+        if (!settling || !b.ready) return;
+        const timer = window.setTimeout(() => setSettling(false), 1800);
         return () => window.clearTimeout(timer);
-    }, [settling]);
+    }, [settling, b.ready]);
 
     // Global undo/redo. Handled even when focus sits in an input, so the app's
     // document history wins over the browser's native text-field undo.

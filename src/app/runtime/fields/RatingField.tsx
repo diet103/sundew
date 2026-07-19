@@ -26,7 +26,18 @@ export function RatingField({
             {steps.map((step) => {
                 const optionId = `${inputId}-${step}`;
                 return (
-                    <span key={step} className="sd-rating-step">
+                    // The radio sits invisibly over the circle (keyboard and
+                    // click semantics intact); the label is the visible 36px
+                    // circle with the number inside. Steps below the checked
+                    // one carry is-below for the filled-up-to tint.
+                    <span
+                        key={step}
+                        className={
+                            value !== undefined && step < value
+                                ? 'sd-rating-step is-below'
+                                : 'sd-rating-step'
+                        }
+                    >
                         <input
                             type="radio"
                             id={optionId}
@@ -34,12 +45,18 @@ export function RatingField({
                             checked={value === step}
                             onChange={() => onChange(step)}
                         />
-                        <label htmlFor={optionId}>{step}</label>
+                        <label htmlFor={optionId} className="sd-rating-num mono">
+                            {step}
+                        </label>
                     </span>
                 );
             })}
             {value !== undefined && !question.required && (
-                <button type="button" className="sd-rating-clear" onClick={() => onChange(undefined)}>
+                <button
+                    type="button"
+                    className="sd-rating-clear mono"
+                    onClick={() => onChange(undefined)}
+                >
                     Clear
                 </button>
             )}

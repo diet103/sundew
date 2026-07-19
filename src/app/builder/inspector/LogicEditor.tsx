@@ -157,7 +157,7 @@ export function LogicEditor({ doc, targetKind, targetId, visibleWhen, dispatch }
                             </select>
                         )}
                         {stale && (
-                            <p className="bldr-hint mono">source now comes after this target — remove or reorder</p>
+                            <p className="bldr-hint mono">source now comes after this target · remove or reorder</p>
                         )}
                         <button
                             type="button"

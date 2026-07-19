@@ -23,6 +23,7 @@ export function ShortTextField({
         <input
             id={inputId}
             className="sd-input"
+            data-format={question.format}
             type={INPUT_TYPE[question.format]}
             inputMode={question.format === 'number' ? 'decimal' : undefined}
             value={value ?? ''}

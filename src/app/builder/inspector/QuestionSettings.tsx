@@ -130,7 +130,7 @@ export function QuestionSettings({ doc, question, dispatch, onSelect }: Question
                             type="number"
                             min={0}
                             value={question.minSelected ?? ''}
-                            placeholder="—"
+                            placeholder="no min"
                             onChange={(event) =>
                                 dispatch(
                                     updateQuestion(question.id, {
@@ -146,7 +146,7 @@ export function QuestionSettings({ doc, question, dispatch, onSelect }: Question
                             type="number"
                             min={1}
                             value={question.maxSelected ?? ''}
-                            placeholder="—"
+                            placeholder="no max"
                             onChange={(event) =>
                                 dispatch(
                                     updateQuestion(question.id, {

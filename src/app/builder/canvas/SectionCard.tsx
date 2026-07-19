@@ -127,20 +127,23 @@ export function SectionCard({
                     </button>
                 </span>
             </header>
-            <input
-                className="bldr-sdesc"
-                aria-label="Section description"
-                placeholder="Section description (optional)"
-                value={section.description ?? ''}
-                onChange={(event) =>
-                    ctx.dispatch(
-                        updateSection(section.id, {
-                            description: event.target.value === '' ? undefined : event.target.value,
-                        }),
-                    )
-                }
-                onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
-            />
+            {(selected || section.description !== undefined) && (
+                <input
+                    className="bldr-sdesc"
+                    aria-label="Section description"
+                    placeholder="Section description"
+                    value={section.description ?? ''}
+                    onChange={(event) =>
+                        ctx.dispatch(
+                            updateSection(section.id, {
+                                description:
+                                    event.target.value === '' ? undefined : event.target.value,
+                            }),
+                        )
+                    }
+                    onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
+                />
+            )}
             {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
             {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
             <SortableContext

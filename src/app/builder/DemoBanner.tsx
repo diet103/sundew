@@ -14,8 +14,7 @@ export function DemoBanner() {
     return (
         <div className="bldr-demo" role="note">
             <span className="mono">
-                demo document · lives in this browser only. Edit anything — sign in whenever you
-                want to keep it.
+                This is a live demo · it&apos;s yours to edit · changes save to this browser
             </span>
             <button
                 type="button"

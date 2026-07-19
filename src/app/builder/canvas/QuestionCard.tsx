@@ -1,11 +1,12 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Question } from '@shared/schema';
 import { QuestionField } from '@app/runtime/QuestionField';
 import { deleteQuestion, updateQuestion } from '../state/actions';
 import { qDndId } from '../dnd/sortable';
+import { QUESTION_TYPE_LABELS } from './AddQuestionMenu';
 import { questionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
 import type { CanvasCtx } from './Canvas';
 
@@ -21,12 +22,25 @@ function pointInRect(rect: DOMRect, x: number, y: number): boolean {
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+function prefersReducedMotion(): boolean {
+    try {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+        // No matchMedia (jsdom): treat as reduced so state changes stay instant.
+        return true;
+    }
+}
+
 export function QuestionCard({ question, displayIndex, settleIndex, ctx }: QuestionCardProps) {
     const registry = useCardRegistry();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: qDndId(question.id),
     });
     const titleRef = useRef<HTMLInputElement>(null);
+    // Captured at mount: true only for the card the user just added, so the
+    // grow-in runs once and never on initial load or reorder re-renders.
+    const [isNew, setIsNew] = useState(() => ctx.justAddedId === question.id);
+    const [exiting, setExiting] = useState(false);
 
     const selected = ctx.selection?.kind === 'question' && ctx.selection.id === question.id;
     const dormant =
@@ -39,7 +53,8 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
     const autoFocusTitle = selected && ctx.justAddedId === question.id;
     useEffect(() => {
         if (autoFocusTitle && titleRef.current) {
-            titleRef.current.focus();
+            // preventScroll: the card is mid grow-in; the caret lands quietly.
+            titleRef.current.focus({ preventScroll: true });
             ctx.onAutoFocusDone();
         }
     }, [autoFocusTitle, ctx]);
@@ -86,10 +101,22 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
 
     const meta = [
         `Q-${String(displayIndex).padStart(2, '0')}`,
-        question.type,
+        QUESTION_TYPE_LABELS[question.type],
         ...(question.required ? ['required'] : []),
         ...(dormant ? ['hidden by logic'] : []),
     ].join(' · ');
+
+    const removeSelf = () => {
+        if (exiting) return;
+        if (prefersReducedMotion()) {
+            ctx.dispatch(deleteQuestion(question.id));
+            return;
+        }
+        // Presentation-only exit: collapse for 200ms, then the reducer removes
+        // the question in one instant step (undo still restores it whole).
+        setExiting(true);
+        window.setTimeout(() => ctx.dispatch(deleteQuestion(question.id)), 190);
+    };
 
     const cardClass = [
         'bldr-qcard',
@@ -101,90 +128,106 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
         .filter(Boolean)
         .join(' ');
 
+    const growClass = ['bldr-qgrow', isNew ? 'is-new' : '', exiting ? 'is-exiting' : '']
+        .filter(Boolean)
+        .join(' ');
+
     return (
         <div
-            ref={setRefs}
-            className={cardClass}
-            style={style}
-            role="group"
-            aria-label={`Question ${displayIndex}: ${question.title || 'untitled'}`}
-            tabIndex={0}
-            onClick={() => ctx.onSelect({ kind: 'question', id: question.id })}
-            onKeyDown={onCardKeyDown}
-            onMouseMove={onMouseMove}
-            onMouseLeave={() => ctx.setHot(null)}
-            onFocus={(event) => {
-                if (event.target === event.currentTarget && question.visibleWhen) {
-                    ctx.setHot({ kind: 'card', id: question.id });
-                }
+            className={growClass}
+            onAnimationEnd={(event) => {
+                // Drop the clipping wrapper once grown so dnd lifts never clip.
+                if (event.animationName === 'bldr-grow-in') setIsNew(false);
             }}
         >
-            <div className="bldr-qtop">
-                <span className="bldr-qmeta mono" aria-hidden="true">
-                    {meta}
-                </span>
-                <span className="bldr-qactions">
-                    <button
-                        type="button"
-                        className="sd-drag"
-                        aria-label="Reorder question"
-                        {...attributes}
-                        {...listeners}
-                    >
-                        <span aria-hidden="true">⠿</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="bldr-icon-btn"
-                        aria-label="Delete question"
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            ctx.dispatch(deleteQuestion(question.id));
-                        }}
-                    >
-                        <span aria-hidden="true">✕</span>
-                    </button>
-                </span>
-            </div>
-            {selected && (
-                <div className="bldr-qedit">
-                    <input
-                        ref={titleRef}
-                        className="bldr-inline-title"
-                        aria-label="Question title"
-                        placeholder="Question title"
-                        value={question.title}
-                        onChange={(event) =>
-                            ctx.dispatch(updateQuestion(question.id, { title: event.target.value }))
-                        }
-                    />
-                    <input
-                        className="bldr-inline-desc"
-                        aria-label="Question description"
-                        placeholder="Add a description"
-                        value={question.description ?? ''}
-                        onChange={(event) =>
-                            ctx.dispatch(
-                                updateQuestion(question.id, {
-                                    description:
-                                        event.target.value === '' ? undefined : event.target.value,
-                                }),
-                            )
-                        }
+            <div
+                ref={setRefs}
+                className={cardClass}
+                style={style}
+                role="group"
+                aria-label={`Question ${displayIndex}: ${question.title || 'untitled'}`}
+                tabIndex={0}
+                onClick={() => ctx.onSelect({ kind: 'question', id: question.id })}
+                onKeyDown={onCardKeyDown}
+                onMouseMove={onMouseMove}
+                onMouseLeave={() => ctx.setHot(null)}
+                onFocus={(event) => {
+                    if (event.target === event.currentTarget && question.visibleWhen) {
+                        ctx.setHot({ kind: 'card', id: question.id });
+                    }
+                }}
+            >
+                <div className="bldr-qtop">
+                    <span className="bldr-qmeta mono" aria-hidden="true">
+                        {meta}
+                    </span>
+                    <span className="bldr-qactions">
+                        <button
+                            type="button"
+                            className="sd-drag"
+                            aria-label="Reorder question"
+                            {...attributes}
+                            {...listeners}
+                        >
+                            <span aria-hidden="true">⠿</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="bldr-icon-btn"
+                            aria-label="Delete question"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                removeSelf();
+                            }}
+                        >
+                            <span aria-hidden="true">✕</span>
+                        </button>
+                    </span>
+                </div>
+                {selected && (
+                    <div className="bldr-qedit">
+                        <input
+                            ref={titleRef}
+                            className="bldr-inline-title"
+                            aria-label="Question title"
+                            placeholder="Question title"
+                            value={question.title}
+                            onChange={(event) =>
+                                ctx.dispatch(
+                                    updateQuestion(question.id, { title: event.target.value }),
+                                )
+                            }
+                        />
+                        <input
+                            className="bldr-inline-desc"
+                            aria-label="Question description"
+                            placeholder="Add a description"
+                            value={question.description ?? ''}
+                            onChange={(event) =>
+                                ctx.dispatch(
+                                    updateQuestion(question.id, {
+                                        description:
+                                            event.target.value === ''
+                                                ? undefined
+                                                : event.target.value,
+                                    }),
+                                )
+                            }
+                        />
+                    </div>
+                )}
+                <div inert className={selected ? 'bldr-qbody is-headless' : 'bldr-qbody'}>
+                    <QuestionField
+                        question={question}
+                        value={undefined}
+                        onChange={() => {}}
+                        idPrefix="bldr-"
+                        hideDescription={selected}
                     />
                 </div>
-            )}
-            <div inert className={selected ? 'bldr-qbody is-headless' : 'bldr-qbody'}>
-                <QuestionField
-                    question={question}
-                    value={undefined}
-                    onChange={() => {}}
-                    idPrefix="bldr-"
-                    hideDescription={selected}
-                />
+                {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
+                {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
             </div>
-            {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
-            {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
         </div>
     );
 }
