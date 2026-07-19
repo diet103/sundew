@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     DndContext,
@@ -231,14 +231,22 @@ export interface SectionListPanelProps {
     dispatch: (action: BuilderAction) => void;
     selection: Selection | null;
     onSelect: (selection: Selection | null) => void;
+    /** The canvas scroll container; the scroll spy observes against it. */
+    scrollRootRef: RefObject<HTMLElement | null>;
 }
 
-export function SectionListPanel({ doc, dispatch, selection, onSelect }: SectionListPanelProps) {
+export function SectionListPanel({
+    doc,
+    dispatch,
+    selection,
+    onSelect,
+    scrollRootRef,
+}: SectionListPanelProps) {
     const registry = useCardRegistry();
     const store = useNavStoreContext();
     const navOpen = useNavSelector((state) => state.navOpen);
     const reorderMode = useNavSelector((state) => state.reorderMode);
-    const currentSectionId = useScrollSpy(doc, registry);
+    const currentSectionId = useScrollSpy(doc, registry, scrollRootRef);
 
     // Cross-container drag draft: rows render from this while a question drag
     // is in flight, and exactly ONE moveQuestion dispatch happens on drop.

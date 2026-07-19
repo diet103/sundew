@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
 import { emptyForm } from '@shared/schema';
 import { FormRenderer } from '@app/runtime/FormRenderer';
@@ -71,6 +71,9 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     const [autoPublish, setAutoPublish] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(false);
     const [settling, setSettling] = useState(startSettling);
+    // The canvas column is the builder's scroller (app frame); the navigator's
+    // scroll spy observes section cards against it.
+    const canvasColRef = useRef<HTMLDivElement>(null);
 
     // Live even while the publish menu is closed, so the top bar can show
     // the "· edited" nudge. Only compares while the form is actually live.
@@ -182,9 +185,10 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                             dispatch={b.dispatch}
                             selection={b.selection}
                             onSelect={b.select}
+                            scrollRootRef={canvasColRef}
                         />
                     )}
-                    <div className="bldr-canvas-col">
+                    <div className="bldr-canvas-col" ref={canvasColRef}>
                         {b.isLocal && !preview && <DemoBanner />}
                         {preview ? (
                             <BuilderPreview doc={b.doc} />
