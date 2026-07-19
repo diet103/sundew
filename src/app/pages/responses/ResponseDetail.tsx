@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AnswerValue, FormDefinition, Question } from '@shared/schema';
+import type { FormDefinition } from '@shared/schema';
 import { evaluateVisibility } from '@shared/visibility';
 import { api } from '@app/api/client';
+import { formatAnswer } from '@app/runtime/formatAnswer';
 
 export interface ResponseDetailProps {
     formId: string;
@@ -9,24 +10,6 @@ export interface ResponseDetailProps {
     /** Version-pinned definition lookup; the parent caches per version. */
     getDefinition: (version: number) => Promise<FormDefinition>;
     onDeleted: () => void;
-}
-
-function optionLabel(question: Question, optionId: string): string {
-    if (question.type === 'select' || question.type === 'radio' || question.type === 'checkbox') {
-        return question.options.find((o) => o.id === optionId)?.label ?? optionId;
-    }
-    return optionId;
-}
-
-function formatAnswer(question: Question, value: AnswerValue): string {
-    if (Array.isArray(value)) return value.map((v) => optionLabel(question, v)).join(' · ');
-    if (typeof value === 'number') {
-        return question.type === 'rating' ? `${value} / ${question.scale}` : String(value);
-    }
-    if (question.type === 'select' || question.type === 'radio') {
-        return optionLabel(question, value);
-    }
-    return value;
 }
 
 export function ResponseDetail({

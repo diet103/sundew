@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
 import type { UseDraftsResult } from './useDrafts';
+
+// Both dialogs share one module, so they load as ONE lazy chunk fetched only
+// when a respondent first opens them.
+const DraftsDialog = lazy(() => import('./DraftsDialog'));
+const SaveAsDialog = lazy(() =>
+    import('./DraftsDialog').then((m) => ({ default: m.SaveAsDialog })),
+);
 
 export interface DraftsMenuProps {
     drafts: UseDraftsResult;
@@ -136,7 +143,21 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                     draft storage is full · delete a draft to keep saving
                 </p>
             )}
-            {/* Dialogs (View drafts / Save as) mount here as a lazy chunk. */}
+            {dialog !== null && (
+                <Suspense fallback={null}>
+                    {dialog === 'drafts' ? (
+                        <DraftsDialog
+                            drafts={drafts}
+                            definition={definition}
+                            onResume={onResume}
+                            onNewDraft={onNewDraft}
+                            onClose={closeDialog}
+                        />
+                    ) : (
+                        <SaveAsDialog drafts={drafts} onClose={closeDialog} />
+                    )}
+                </Suspense>
+            )}
         </div>
     );
 }

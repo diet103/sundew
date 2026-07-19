@@ -10,6 +10,7 @@ const BUDGETS = [
     { pattern: /^index-.*\.js$/, label: 'entry', maxGzip: 100_000 },
     { pattern: /^BuilderApp-.*\.js$/, label: 'builder chunk', maxGzip: 45_000 },
     { pattern: /^FillPage-.*\.js$/, label: 'fill chunk', maxGzip: 10_000 },
+    { pattern: /^DraftsDialog-.*\.js$/, label: 'drafts dialog', maxGzip: 10_000 },
 ];
 
 let failed = false;
