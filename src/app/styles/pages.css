@@ -305,6 +305,21 @@
     color: var(--gray-0);
 }
 
+/* The dev-stub entry is a <button>, not an anchor; keep the same clothes. */
+button.signin-button {
+    cursor: pointer;
+}
+
+button.signin-button:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.signin-stub-hint {
+    flex-basis: 100%;
+    margin: 0;
+}
+
 /* ---- Fill page ------------------------------------------------------------ */
 .fill-shell-banner {
     /* clear the fixed demo banner */

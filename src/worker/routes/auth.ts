@@ -261,8 +261,13 @@ auth.get('/me', async (c) => {
 // Test-only sign-in used by Playwright; guarded by an env flag never set in production.
 auth.post('/auth/e2e', async (c) => {
     if (c.env.E2E_AUTH_STUB !== '1') return c.json({ error: 'notFound' }, 404);
+    // Looser than z.email() on purpose: the dev stub signs in as
+    // dev@localhost, a TLD-less address strict email validation rejects.
     const body = z
-        .object({ email: z.email(), name: z.string().min(1).max(200) })
+        .object({
+            email: z.string().regex(/^[^\s@]+@[^\s@]+$/).max(200),
+            name: z.string().min(1).max(200),
+        })
         .safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: 'badRequest' }, 400);
     let user = await getUserByEmail(c.env.DB, body.data.email);

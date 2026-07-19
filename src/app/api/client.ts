@@ -172,6 +172,12 @@ export const api = {
         throw new ApiFailure(res.status);
     },
 
+    /** Dev-only stub sign-in (404s unless the worker runs with E2E_AUTH_STUB=1). */
+    async e2eSignIn(email: string, name: string): Promise<void> {
+        const res = await request('/auth/e2e', jsonInit('POST', { email, name }));
+        if (!res.ok) throw new ApiFailure(res.status);
+    },
+
     async logout(): Promise<void> {
         const res = await request('/auth/logout', { method: 'POST' });
         if (!res.ok) throw new ApiFailure(res.status);
