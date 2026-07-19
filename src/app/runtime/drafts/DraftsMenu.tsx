@@ -1,6 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
+import { DraftsIcon, ListIcon, PlusIcon, SaveIcon } from '@app/components/icons';
 import type { UseDraftsResult } from './useDrafts';
 
 // Both dialogs share one module, so they load as ONE lazy chunk fetched only
@@ -90,11 +91,12 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                 <button
                     ref={buttonRef}
                     type="button"
-                    className="fill-drafts-btn mono"
+                    className="fill-drafts-btn mono with-ico"
                     aria-haspopup="menu"
                     aria-expanded={open}
                     onClick={() => setOpen((v) => !v)}
                 >
+                    <DraftsIcon />
                     Drafts
                 </button>
                 {open && (
@@ -114,7 +116,10 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                                 drafts.saveNow();
                             }}
                         >
-                            Save draft
+                            <span className="with-ico">
+                                <SaveIcon />
+                                Save draft
+                            </span>
                         </button>
                         <button
                             type="button"
@@ -125,7 +130,10 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                                 setDialog('saveAs');
                             }}
                         >
-                            Save as
+                            <span className="with-ico">
+                                <SaveIcon />
+                                Save as
+                            </span>
                         </button>
                         <button
                             type="button"
@@ -136,7 +144,10 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                                 setDialog('drafts');
                             }}
                         >
-                            View drafts
+                            <span className="with-ico">
+                                <ListIcon />
+                                View drafts
+                            </span>
                         </button>
                         <button
                             type="button"
@@ -147,7 +158,10 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                                 onNewDraft();
                             }}
                         >
-                            New draft
+                            <span className="with-ico">
+                                <PlusIcon />
+                                New draft
+                            </span>
                         </button>
                         <button
                             type="button"

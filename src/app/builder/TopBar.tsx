@@ -4,6 +4,7 @@ import { Link } from 'wouter';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import { SundewMark } from '@app/components/SundewMark';
+import { EyeIcon, RedoIcon, SendIcon, SignOutIcon, UndoIcon } from '@app/components/icons';
 import type { BuilderAction } from './state/actions';
 import { setFormMeta } from './state/actions';
 import type { BuilderSaveState } from './useBuilderDoc';
@@ -89,7 +90,7 @@ export function TopBar({
                     disabled={!canUndo}
                     onClick={onUndo}
                 >
-                    <span aria-hidden="true">↺</span>
+                    <UndoIcon />
                 </button>
                 <button
                     type="button"
@@ -99,15 +100,16 @@ export function TopBar({
                     disabled={!canRedo}
                     onClick={onRedo}
                 >
-                    <span aria-hidden="true">↻</span>
+                    <RedoIcon />
                 </button>
                 <FormMenu formId={formId} isLocal={isLocal} title={title} dispatch={dispatch} />
                 <button
                     type="button"
-                    className="bldr-btn bldr-btn-quiet"
+                    className="bldr-btn bldr-btn-quiet with-ico"
                     aria-pressed={preview}
                     onClick={onTogglePreview}
                 >
+                    <EyeIcon />
                     Preview
                 </button>
                 <SavePill
@@ -127,10 +129,11 @@ export function TopBar({
                     )}
                     <button
                         type="button"
-                        className="bldr-btn bldr-btn-accent"
+                        className="bldr-btn bldr-btn-accent with-ico"
                         aria-expanded={publishOpen}
                         onClick={onPublishToggle}
                     >
+                        <SendIcon />
                         Publish
                     </button>
                     {publishMenu}
@@ -143,9 +146,10 @@ export function TopBar({
                         <span className="bldr-account-name mono">{user.name ?? user.email}</span>
                         <button
                             type="button"
-                            className="bldr-btn bldr-btn-quiet"
+                            className="bldr-btn bldr-btn-quiet with-ico"
                             onClick={() => void signOut()}
                         >
+                            <SignOutIcon />
                             Sign out
                         </button>
                     </div>

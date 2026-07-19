@@ -27,6 +27,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { FormDefinition, Question, Section } from '@shared/schema';
 import { evaluateVisibility } from '@shared/visibility';
+import { ChevronLeftIcon, ChevronRightIcon, ListReorderIcon } from '@app/components/icons';
 import type { BuilderAction } from '../state/actions';
 import { moveQuestion, moveSection } from '../state/actions';
 import type { Selection } from '../state/types';
@@ -496,7 +497,7 @@ export function SectionListPanel({
                     aria-label="Show section list"
                     onClick={() => store.getState().setNavOpen(true)}
                 >
-                    <span aria-hidden="true">&raquo;</span>
+                    <ChevronRightIcon />
                 </button>
             </div>
         );
@@ -515,10 +516,11 @@ export function SectionListPanel({
             <div className="bldr-nav-head">
                 <button
                     type="button"
-                    className="bldr-btn bldr-btn-quiet mono bldr-nav-reorder"
+                    className="bldr-btn bldr-btn-quiet mono bldr-nav-reorder with-ico"
                     aria-pressed={reorderMode}
                     onClick={() => store.getState().setReorderMode(!reorderMode)}
                 >
+                    <ListReorderIcon />
                     {reorderMode ? 'Done' : 'Reorder'}
                 </button>
                 <button
@@ -527,7 +529,7 @@ export function SectionListPanel({
                     aria-label="Hide section list"
                     onClick={() => store.getState().setNavOpen(false)}
                 >
-                    <span aria-hidden="true">&laquo;</span>
+                    <ChevronLeftIcon />
                 </button>
             </div>
             {reorderMode && (

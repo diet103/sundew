@@ -6,6 +6,7 @@ import { publishProblems } from '@shared/visibility';
 import type { FormStatus } from '@shared/api';
 import { api } from '@app/api/client';
 import { SignInButtons } from '@app/auth/SignInButtons';
+import { CopyIcon } from '@app/components/icons';
 import { relativeTime } from '@app/lib/relativeTime';
 import type { ServerFormMeta } from './useBuilderDoc';
 
@@ -159,7 +160,12 @@ export function PublishMenu({
                 {shareUrl && (
                     <div className="bldr-share">
                         <code className="bldr-share-url mono">{shareUrl}</code>
-                        <button type="button" className="bldr-btn bldr-btn-quiet" onClick={copyUrl}>
+                        <button
+                            type="button"
+                            className="bldr-btn bldr-btn-quiet with-ico"
+                            onClick={copyUrl}
+                        >
+                            <CopyIcon />
                             {copied ? 'copied' : 'Copy'}
                         </button>
                     </div>

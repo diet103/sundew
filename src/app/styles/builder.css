@@ -846,6 +846,7 @@ input.bldr-qdesc:focus {
 
 .bldr-menu-item {
     text-align: left;
+    white-space: nowrap;
     background: transparent;
     border: none;
     border-radius: 4px;

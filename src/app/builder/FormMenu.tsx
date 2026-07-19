@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { api } from '@app/api/client';
+import { MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
 import { deleteLocalDoc, guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import type { BuilderAction } from './state/actions';
 import { resetDoc } from './state/actions';
@@ -86,16 +88,17 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
         deleteMutation.mutate();
     };
 
-    const item = (label: string, action: () => void) => (
+    const item = (icon: ReactNode, label: string, action: () => void) => (
         <button
             type="button"
             role="menuitem"
-            className="bldr-menu-item"
+            className="bldr-menu-item with-ico"
             onClick={() => {
                 setOpen(false);
                 action();
             }}
         >
+            {icon}
             {label}
         </button>
     );
@@ -110,18 +113,19 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
         >
             <button
                 type="button"
-                className="bldr-btn"
+                className="bldr-btn with-ico"
                 aria-haspopup="menu"
                 aria-expanded={open}
                 onClick={() => setOpen((v) => !v)}
             >
+                <MenuIcon />
                 Form
             </button>
             {open && (
                 <div className="bldr-menu bldr-menu-right" role="menu" aria-label="Form actions">
-                    {item('New form', newForm)}
-                    {item('Reset to demo form', resetToDemo)}
-                    {item('Delete this form', deleteThisForm)}
+                    {item(<PlusIcon />, 'New form', newForm)}
+                    {item(<ResetIcon />, 'Reset to demo form', resetToDemo)}
+                    {item(<TrashIcon />, 'Delete this form', deleteThisForm)}
                 </div>
             )}
             {error !== null && <p className="bldr-hint mono">{error}</p>}
