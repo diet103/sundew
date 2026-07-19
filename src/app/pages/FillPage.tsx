@@ -127,6 +127,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     };
 
     if (done) {
+        const remaining = drafts.drafts.length;
         return (
             <FillShell>
                 <div className="fill-confirm">
@@ -139,6 +140,29 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                     <p className="mono fill-receipt">
                         R-{done.submissionId.slice(-4).toUpperCase()}
                     </p>
+                    {remaining > 0 && (
+                        <p className="mono quiet-notice">
+                            {remaining === 1
+                                ? '1 draft for this form remains in this browser'
+                                : `${remaining} drafts for this form remain in this browser`}
+                            {' · '}
+                            <button
+                                type="button"
+                                className="text-button mono"
+                                onClick={() => {
+                                    if (
+                                        window.confirm(
+                                            'Discard all drafts for this form? This cannot be undone.',
+                                        )
+                                    ) {
+                                        drafts.discardAll();
+                                    }
+                                }}
+                            >
+                                Discard them
+                            </button>
+                        </p>
+                    )}
                 </div>
             </FillShell>
         );
