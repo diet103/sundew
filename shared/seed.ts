@@ -22,7 +22,7 @@ export function specimenIntake(): FormDefinition {
         schemaVersion: SCHEMA_VERSION,
         title: 'Specimen intake',
         description:
-            'A demo form, already wired with conditional logic. Everything here is editable: click a question to change it, drag to reorder, or add your own.',
+            'A demo form, already wired with conditional logic. Everything here is editable: click a question to change it, reorder from the section list, or add your own.',
         sections: [
             {
                 id: sid(1),
