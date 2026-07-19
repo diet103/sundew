@@ -1,9 +1,6 @@
 import type { CSSProperties } from 'react';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Section } from '@shared/schema';
 import { deleteSection, moveSection, updateSection } from '../state/actions';
-import { qDndId, secDndId } from '../dnd/sortable';
 import { AddQuestionMenu } from './AddQuestionMenu';
 import { QuestionCard } from './QuestionCard';
 import { sectionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
@@ -28,9 +25,6 @@ export function SectionCard({
     ctx,
 }: SectionCardProps) {
     const registry = useCardRegistry();
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: secDndId(section.id),
-    });
 
     const selected = ctx.selection?.kind === 'section' && ctx.selection.id === section.id;
     const dormant =
@@ -39,13 +33,10 @@ export function SectionCard({
     const hint = section.visibleWhen ? visibilityHint(ctx.doc, section.visibleWhen) : null;
 
     const setRefs = (el: HTMLElement | null) => {
-        setNodeRef(el);
         registry.register(sectionCardKey(section.id), el);
     };
 
     const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
         '--settle-i': settleBase,
     } as CSSProperties;
 
@@ -54,7 +45,6 @@ export function SectionCard({
         selected ? 'is-selected' : '',
         dormant ? 'is-dormant' : '',
         broken ? 'is-broken' : '',
-        isDragging ? 'sd-dragging' : '',
     ]
         .filter(Boolean)
         .join(' ');
@@ -91,15 +81,6 @@ export function SectionCard({
                         onFocus={() => ctx.onSelect({ kind: 'section', id: section.id })}
                     />
                     <span className="bldr-sactions">
-                        <button
-                            type="button"
-                            className="sd-drag"
-                            aria-label="Reorder section"
-                            {...attributes}
-                            {...listeners}
-                        >
-                            <span aria-hidden="true">⠿</span>
-                        </button>
                         <button
                             type="button"
                             className="bldr-icon-btn"
@@ -160,24 +141,19 @@ export function SectionCard({
             </div>
             {dormant && hint && <p className="bldr-tag mono">{`hidden · ${hint}`}</p>}
             {broken && <p className="bldr-tag is-broken mono">rule needs attention</p>}
-            <SortableContext
-                items={section.questions.map((q) => qDndId(q.id))}
-                strategy={verticalListSortingStrategy}
-            >
-                <ol className="bldr-qlist">
-                    {section.questions.map((question, qi) => (
-                        <li key={question.id}>
-                            <QuestionCard
-                                question={question}
-                                sectionId={section.id}
-                                displayIndex={firstQuestionNumber + qi + 1}
-                                settleIndex={settleBase + qi + 1}
-                                ctx={ctx}
-                            />
-                        </li>
-                    ))}
-                </ol>
-            </SortableContext>
+            <ol className="bldr-qlist">
+                {section.questions.map((question, qi) => (
+                    <li key={question.id}>
+                        <QuestionCard
+                            question={question}
+                            sectionId={section.id}
+                            displayIndex={firstQuestionNumber + qi + 1}
+                            settleIndex={settleBase + qi + 1}
+                            ctx={ctx}
+                        />
+                    </li>
+                ))}
+            </ol>
             <AddQuestionMenu sectionId={section.id} onAdd={ctx.onAddQuestion} />
         </section>
     );

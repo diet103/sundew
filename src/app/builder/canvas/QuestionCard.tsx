@@ -1,11 +1,8 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Question } from '@shared/schema';
 import { QuestionField } from '@app/runtime/QuestionField';
 import { deleteQuestion, updateQuestion } from '../state/actions';
-import { qDndId } from '../dnd/sortable';
 import { QUESTION_TYPE_LABELS } from './AddQuestionMenu';
 import { questionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
 import type { CanvasCtx } from './Canvas';
@@ -33,9 +30,6 @@ function prefersReducedMotion(): boolean {
 
 export function QuestionCard({ question, displayIndex, settleIndex, ctx }: QuestionCardProps) {
     const registry = useCardRegistry();
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: qDndId(question.id),
-    });
     const titleRef = useRef<HTMLInputElement>(null);
     // Captured at mount: true only for the card the user just added, so the
     // grow-in runs once and never on initial load or reorder re-renders.
@@ -60,7 +54,6 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
     }, [autoFocusTitle, ctx]);
 
     const setRefs = (el: HTMLDivElement | null) => {
-        setNodeRef(el);
         registry.register(questionCardKey(question.id), el);
     };
 
@@ -94,8 +87,6 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
     };
 
     const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
         '--settle-i': settleIndex,
     } as CSSProperties;
 
@@ -123,7 +114,6 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
         selected ? 'is-selected' : '',
         dormant ? 'is-dormant' : '',
         broken ? 'is-broken' : '',
-        isDragging ? 'sd-dragging' : '',
     ]
         .filter(Boolean)
         .join(' ');
@@ -162,15 +152,6 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
                         {meta}
                     </span>
                     <span className="bldr-qactions">
-                        <button
-                            type="button"
-                            className="sd-drag"
-                            aria-label="Reorder question"
-                            {...attributes}
-                            {...listeners}
-                        >
-                            <span aria-hidden="true">⠿</span>
-                        </button>
                         <button
                             type="button"
                             className="bldr-icon-btn"

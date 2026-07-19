@@ -1,7 +1,7 @@
 import type { FormDefinition, Section } from '@shared/schema';
 import type { BuilderAction } from '../state/actions';
 import { deleteSection, updateSection } from '../state/actions';
-import { moveSectionAction } from '../dnd/sortable';
+import { moveSectionAction } from '../state/reorder';
 import { LogicEditor } from './LogicEditor';
 
 export interface SectionSettingsProps {

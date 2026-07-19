@@ -115,7 +115,6 @@ export interface ThreadOverlayProps {
     doc: FormDefinition;
     containerRef: RefObject<HTMLElement | null>;
     hot: HotSpot | null;
-    hidden: boolean;
     settling: boolean;
 }
 
@@ -124,7 +123,7 @@ export interface ThreadOverlayProps {
  * one leader line per visibility rule, running from the source row through a
  * gutter lane down to the target card, ending in a dot.
  */
-export function ThreadOverlay({ doc, containerRef, hot, hidden, settling }: ThreadOverlayProps) {
+export function ThreadOverlay({ doc, containerRef, hot, settling }: ThreadOverlayProps) {
     const registry = useCardRegistry();
     const [paths, setPaths] = useState<ThreadPath[]>([]);
 
@@ -225,7 +224,6 @@ export function ThreadOverlay({ doc, containerRef, hot, hidden, settling }: Thre
     const anyHot = hot !== null && [...hotByKey.values()].some(Boolean);
     const svgClass = [
         'bldr-threads',
-        hidden ? 'is-hidden' : '',
         settling ? 'is-settling' : '',
         anyHot ? 'has-hot' : '',
     ]

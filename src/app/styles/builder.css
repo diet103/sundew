@@ -503,8 +503,6 @@
 }
 
 /* Drag lift: barely-there scale plus the accent hairline; settles on drop. */
-.bldr-qcard.sd-dragging,
-.bldr-scard.sd-dragging,
 .bldr-optrow.sd-dragging {
     opacity: 0.92;
     scale: 1.01;
@@ -675,10 +673,6 @@ input.bldr-qdesc:focus {
     pointer-events: none;
     overflow: visible;
     transition: opacity 150ms ease;
-}
-
-.bldr-threads.is-hidden {
-    opacity: 0;
 }
 
 .bldr-thread .bldr-thread-line {
