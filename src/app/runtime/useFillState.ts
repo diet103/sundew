@@ -1,61 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Answers, AnswerValue, FormDefinition } from '@shared/schema';
-import { zAnswers } from '@shared/schema';
 import type { SubmissionError } from '@shared/visibility';
 import { validateSubmission } from '@shared/visibility';
 
-const DRAFT_DEBOUNCE_MS = 500;
+// Pure in-memory fill state: answers + validation. Persistence (drafts) lives
+// in runtime/drafts and feeds this hook via initialAnswers / replaceAnswers.
 
 export interface FillState {
     answers: Answers;
     setAnswer: (questionId: string, value: AnswerValue | undefined) => void;
+    /** Swap in a whole answers object (draft resume / new draft), clearing errors. */
+    replaceAnswers: (next: Answers) => void;
     errors: Map<string, string>;
     summaryErrors: SubmissionError[];
     validate: () => boolean;
     reset: () => void;
-    hadSavedDraft: boolean;
 }
 
-// localStorage can throw (privacy modes, quota); drafts are strictly best-effort.
-function loadDraft(storageKey: string | undefined): Answers | null {
-    if (storageKey === undefined) return null;
-    try {
-        const raw = window.localStorage.getItem(storageKey);
-        if (raw === null) return null;
-        const parsed = zAnswers.safeParse(JSON.parse(raw));
-        return parsed.success ? parsed.data : null;
-    } catch {
-        return null;
-    }
-}
-
-export function useFillState(definition: FormDefinition, storageKey?: string): FillState {
-    const [draft] = useState(() => loadDraft(storageKey));
-    const [answers, setAnswers] = useState<Answers>(draft ?? {});
+export function useFillState(definition: FormDefinition, initialAnswers?: Answers): FillState {
+    const [answers, setAnswers] = useState<Answers>(initialAnswers ?? {});
     const [errors, setErrors] = useState<Map<string, string>>(() => new Map());
     const [summaryErrors, setSummaryErrors] = useState<SubmissionError[]>([]);
-
-    // Tracks the last serialized state persisted (or hydrated/cleared), so the
-    // debounced writer never re-creates a draft right after mount or reset().
-    const lastSaved = useRef<string | null>(null);
-    if (lastSaved.current === null) {
-        lastSaved.current = JSON.stringify(draft ?? {});
-    }
-
-    useEffect(() => {
-        if (storageKey === undefined) return;
-        const serialized = JSON.stringify(answers);
-        if (serialized === lastSaved.current) return;
-        const timer = window.setTimeout(() => {
-            try {
-                window.localStorage.setItem(storageKey, serialized);
-                lastSaved.current = serialized;
-            } catch {
-                // storage unavailable; skip this draft write
-            }
-        }, DRAFT_DEBOUNCE_MS);
-        return () => window.clearTimeout(timer);
-    }, [answers, storageKey]);
 
     const setAnswer = useCallback((questionId: string, value: AnswerValue | undefined) => {
         setAnswers((prev) => {
@@ -75,6 +40,12 @@ export function useFillState(definition: FormDefinition, storageKey?: string): F
         });
     }, []);
 
+    const replaceAnswers = useCallback((next: Answers) => {
+        setAnswers(next);
+        setErrors(new Map());
+        setSummaryErrors([]);
+    }, []);
+
     const validate = useCallback((): boolean => {
         const result = validateSubmission(definition, answers);
         const byQuestion = new Map<string, string>();
@@ -87,26 +58,16 @@ export function useFillState(definition: FormDefinition, storageKey?: string): F
     }, [definition, answers]);
 
     const reset = useCallback(() => {
-        setAnswers({});
-        setErrors(new Map());
-        setSummaryErrors([]);
-        lastSaved.current = '{}';
-        if (storageKey !== undefined) {
-            try {
-                window.localStorage.removeItem(storageKey);
-            } catch {
-                // storage unavailable; nothing to clear
-            }
-        }
-    }, [storageKey]);
+        replaceAnswers({});
+    }, [replaceAnswers]);
 
     return {
         answers,
         setAnswer,
+        replaceAnswers,
         errors,
         summaryErrors,
         validate,
         reset,
-        hadSavedDraft: draft !== null,
     };
 }

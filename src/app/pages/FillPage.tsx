@@ -8,7 +8,7 @@ import { ApiFailure, api } from '@app/api/client';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
-import { fillDraftKey } from '@app/builder/autosave/localMirror';
+import { useDrafts } from '@app/runtime/drafts/useDrafts';
 import { SundewMark } from '@app/components/SundewMark';
 
 // Respondent-facing footer: neutral voice, links back to the product.
@@ -41,7 +41,9 @@ function DemoBanner({ slug }: { slug: string }) {
 }
 
 function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
-    const state = useFillState(fill.definition, fillDraftKey(slug));
+    const drafts = useDrafts(slug, fill.definition, fill.version);
+    const state = useFillState(fill.definition, drafts.ready.initialAnswers);
+    const [pruned, setPruned] = useState(drafts.ready.prunedCount > 0);
     const [done, setDone] = useState<SubmitResponse | null>(null);
     const [serverErrors, setServerErrors] = useState<SubmissionError[]>([]);
     const [failure, setFailure] = useState<'rateLimited' | 'generic' | null>(null);
@@ -54,6 +56,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
             if (result.ok) {
                 setDone(result);
                 state.reset();
+                drafts.completeSubmit();
             } else {
                 setServerErrors(result.errors);
             }
@@ -69,6 +72,14 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     useEffect(() => {
         document.title = fill.formTitle;
     }, [fill.formTitle]);
+
+    // Mirror every answers change into the draft layer. Reading the committed
+    // state (instead of computing "next" inside onAnswer) can never go stale,
+    // and the draft layer's dirty gate makes redundant notifications free.
+    const { onChange: draftsOnChange } = drafts;
+    useEffect(() => {
+        draftsOnChange(state.answers);
+    }, [draftsOnChange, state.answers]);
 
     const summaryErrors = state.summaryErrors.length > 0 ? state.summaryErrors : serverErrors;
 
@@ -125,8 +136,13 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                 {fill.definition.description !== undefined && (
                     <p className="fill-description">{fill.definition.description}</p>
                 )}
-                {state.hadSavedDraft && (
+                {drafts.ready.restored && (
                     <p className="mono quiet-notice">draft restored · saved in this browser</p>
+                )}
+                {pruned && (
+                    <p className="mono quiet-notice">
+                        this form changed since this draft · some answers may not apply
+                    </p>
                 )}
                 <div ref={summaryRef}>
                     <ErrorSummary errors={summaryErrors} definition={fill.definition} />
