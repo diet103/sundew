@@ -46,3 +46,35 @@ Prerequisite: dietergrosswiler.com attached to the resume-website worker.
 3. Add the apex redirect URI to the Google client; repoint the prod GitHub app.
 4. Re-verify security headers on both workers and `noindex` on share pages.
 5. `APP_ORIGIN` in wrangler.jsonc already points at the apex; nothing to change.
+
+## Local OAuth (optional)
+
+Dev works without any of this: with no provider configured and
+`E2E_AUTH_STUB=1` in `.dev.vars`, the sign-in UI shows a "Continue as test
+user (dev)" button that signs in a local test account, so publish → share →
+fill → inbox is fully testable with zero OAuth setup. Configure real
+providers only when you want to exercise the actual OAuth flows locally.
+
+### Google
+
+1. console.cloud.google.com → APIs & Services → Credentials → Create
+   credentials → OAuth client ID, application type **Web application**.
+2. Authorized JavaScript origin: `http://localhost:5173`
+   Authorized redirect URI: `http://localhost:5173/forms/api/auth/google/callback`
+3. Consent screen: **External**, add yourself as a test user (no verification
+   needed while the app stays in testing).
+4. Put the credentials in `.dev.vars`: `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`.
+
+### GitHub
+
+1. github.com/settings/developers → OAuth Apps → New OAuth App. GitHub allows
+   one callback URL per app, so this is a separate dev app, not the prod one.
+2. Homepage URL: `http://localhost:5173/forms/`
+   Authorization callback URL: `http://localhost:5173/forms/api/auth/github/callback`
+3. Put the credentials in `.dev.vars`: `GITHUB_CLIENT_ID` and
+   `GITHUB_CLIENT_SECRET`.
+
+Restart the dev server after editing `.dev.vars`. `E2E_AUTH_STUB=1` can stay:
+configured providers win in the UI, and the stub button only shows when no
+provider is configured.
