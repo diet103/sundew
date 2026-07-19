@@ -350,12 +350,104 @@ button.signin-button:disabled {
     color: var(--accent-press);
 }
 
+/* Wide screens: outline rail left, form column centered. The 1fr gutters
+   balance so the form keeps its centered max-width look; the rail sits in
+   the left gutter. The page itself still scrolls the window. */
+.fill-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 64ch) minmax(0, 1fr);
+}
+
+.fill-body .fill-page {
+    grid-column: 2;
+}
+
 .fill-page {
     flex: 1;
     width: 100%;
     max-width: 64ch;
     margin: 0 auto;
     padding: 2.5rem 1.25rem 4rem;
+}
+
+/* ---- Fill outline (respondent section list) -------------------------------- */
+.fill-outline {
+    grid-column: 1;
+    justify-self: end;
+    align-self: start;
+    width: 220px;
+    position: sticky;
+    /* below the fixed demo banner */
+    top: 3.4rem;
+    max-height: calc(100dvh - 4.2rem);
+    overflow-y: auto;
+    padding: 2.5rem 0.8rem 2rem 0.5rem;
+}
+
+.fill-outline-list,
+.fill-outline-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.fill-outline-sublist {
+    padding-left: 1.05rem;
+}
+
+.fill-outline-row {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4em;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.28em 0.45em;
+    color: var(--gray-300);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease;
+}
+
+.fill-outline-row:hover {
+    background-color: var(--accent-subtle-overlay);
+    color: var(--gray-0);
+}
+
+.fill-outline-qrow {
+    font-size: var(--text-sm);
+}
+
+.fill-outline-num {
+    flex-shrink: 0;
+    color: var(--gray-400);
+    font-size: var(--text-sm);
+}
+
+.fill-outline-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* You-are-here: accent bar + faint tint + ink-strength text. */
+.fill-outline-srow.is-current {
+    box-shadow: inset 2px 0 0 var(--accent-regular);
+    background-color: var(--accent-subtle-overlay);
+    color: var(--gray-0);
+}
+
+.fill-outline-qrow.is-current {
+    color: var(--gray-0);
 }
 
 .fill-title {
@@ -1022,5 +1114,15 @@ button.signin-button:disabled {
 
     .fill-shell-banner {
         padding-top: 4.5rem;
+    }
+
+    /* The outline is a wide-screen affordance; small screens keep the plain
+       single-column fill flow. */
+    .fill-body {
+        display: block;
+    }
+
+    .fill-outline {
+        display: none;
     }
 }

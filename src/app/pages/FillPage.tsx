@@ -4,8 +4,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { FillResponse, SubmitResponse } from '@shared/api';
 import type { Answers, AnswerValue } from '@shared/schema';
 import type { SubmissionError } from '@shared/visibility';
+import { evaluateVisibility } from '@shared/visibility';
 import { ApiFailure, api } from '@app/api/client';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
+import { FillOutline } from '@app/runtime/FillOutline';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
 import { useDrafts } from '@app/runtime/drafts/useDrafts';
@@ -103,6 +105,10 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     }
     for (const [questionId, message] of state.errors) mergedErrors.set(questionId, message);
 
+    // One evaluation per render, shared by the outline and the form itself so
+    // both always agree on what is visible.
+    const visibility = evaluateVisibility(fill.definition, state.answers);
+
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
         setFailure(null);
@@ -171,53 +177,59 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     return (
         <div className="page-shell fill-shell fill-shell-banner">
             <DemoBanner slug={slug} />
-            <main className="fill-page">
-                <h1 className="fill-title">{fill.definition.title}</h1>
-                {fill.definition.description !== undefined && (
-                    <p className="fill-description">{fill.definition.description}</p>
-                )}
-                <div className="fill-drafts-row">
-                    <DraftsMenu
-                        drafts={drafts}
-                        definition={fill.definition}
-                        onNewDraft={handleNewDraft}
-                        onResume={handleResume}
-                    />
-                </div>
-                {drafts.ready.restored && (
-                    <p className="mono quiet-notice">draft restored · saved in this browser</p>
-                )}
-                {pruned && (
-                    <p className="mono quiet-notice">
-                        this form changed since this draft · some answers may not apply
-                    </p>
-                )}
-                <div ref={summaryRef}>
-                    <ErrorSummary errors={summaryErrors} definition={fill.definition} />
-                </div>
-                <form noValidate onSubmit={handleSubmit}>
-                    <FormRenderer
-                        definition={fill.definition}
-                        answers={state.answers}
-                        onAnswer={onAnswer}
-                        errors={mergedErrors}
-                        disabled={submitting}
-                    />
-                    <div className="fill-submit-row">
-                        <button type="submit" className="accent-button" disabled={submitting}>
-                            {submitting ? 'Submitting…' : 'Submit'}
-                        </button>
-                        {failure === 'rateLimited' && (
-                            <p className="mono quiet-notice">
-                                Too many submissions from this network. Try again in a minute.
-                            </p>
-                        )}
-                        {failure === 'generic' && (
-                            <p className="mono quiet-notice">Something went wrong. Try again.</p>
-                        )}
+            <div className="fill-body">
+                <FillOutline definition={fill.definition} visibility={visibility} />
+                <main className="fill-page">
+                    <h1 className="fill-title">{fill.definition.title}</h1>
+                    {fill.definition.description !== undefined && (
+                        <p className="fill-description">{fill.definition.description}</p>
+                    )}
+                    <div className="fill-drafts-row">
+                        <DraftsMenu
+                            drafts={drafts}
+                            definition={fill.definition}
+                            onNewDraft={handleNewDraft}
+                            onResume={handleResume}
+                        />
                     </div>
-                </form>
-            </main>
+                    {drafts.ready.restored && (
+                        <p className="mono quiet-notice">draft restored · saved in this browser</p>
+                    )}
+                    {pruned && (
+                        <p className="mono quiet-notice">
+                            this form changed since this draft · some answers may not apply
+                        </p>
+                    )}
+                    <div ref={summaryRef}>
+                        <ErrorSummary errors={summaryErrors} definition={fill.definition} />
+                    </div>
+                    <form noValidate onSubmit={handleSubmit}>
+                        <FormRenderer
+                            definition={fill.definition}
+                            answers={state.answers}
+                            onAnswer={onAnswer}
+                            errors={mergedErrors}
+                            disabled={submitting}
+                            visibility={visibility}
+                        />
+                        <div className="fill-submit-row">
+                            <button type="submit" className="accent-button" disabled={submitting}>
+                                {submitting ? 'Submitting…' : 'Submit'}
+                            </button>
+                            {failure === 'rateLimited' && (
+                                <p className="mono quiet-notice">
+                                    Too many submissions from this network. Try again in a minute.
+                                </p>
+                            )}
+                            {failure === 'generic' && (
+                                <p className="mono quiet-notice">
+                                    Something went wrong. Try again.
+                                </p>
+                            )}
+                        </div>
+                    </form>
+                </main>
+            </div>
             <FillFooter />
         </div>
     );

@@ -963,12 +963,17 @@ input.bldr-qdesc:focus {
     background-color: var(--accent-subtle-overlay);
 }
 
-.bldr-nav-row.is-selected {
-    color: var(--accent-regular);
+/* You-are-here (scroll position): accent bar + faint tint + ink-strength
+   text. Distinct from selection, which colors the row text accent below —
+   declared after so a row that is both reads as selected. */
+.bldr-nav-srow.is-current {
+    box-shadow: inset 2px 0 0 var(--accent-regular);
+    background-color: var(--accent-subtle-overlay);
+    color: var(--gray-0);
 }
 
-.bldr-nav-srow.is-current {
-    box-shadow: inset 2px 0 0 var(--rule);
+.bldr-nav-row.is-selected {
+    color: var(--accent-regular);
 }
 
 .bldr-nav-qrow {

@@ -15,6 +15,12 @@
 html,
 body {
     min-height: 100%;
+}
+
+/* Clip stray horizontal overflow at the root only. On body it would make
+   body its own scroll container and silently break position: sticky against
+   the viewport (the fill outline sticks to window scroll). */
+html {
     overflow-x: hidden;
 }
 

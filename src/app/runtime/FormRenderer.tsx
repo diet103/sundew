@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Answers, AnswerValue, FormDefinition, Question } from '@shared/schema';
+import type { VisibilityResult } from '@shared/visibility';
 import { evaluateVisibility } from '@shared/visibility';
 import { QuestionField } from './QuestionField';
 import { Reveal } from './Reveal';
@@ -12,6 +13,9 @@ export interface FormRendererProps {
     disabled?: boolean;
     idPrefix?: string;
     hideDescriptions?: boolean;
+    /** Precomputed visibility (pass when the page also needs it, e.g. for the
+     *  fill outline) so one evaluation serves the whole render. */
+    visibility?: VisibilityResult;
     renderQuestionExtra?: (q: Question, sectionId: string) => ReactNode;
 }
 
@@ -30,13 +34,19 @@ export function FormRenderer({
     disabled,
     idPrefix,
     hideDescriptions,
+    visibility,
     renderQuestionExtra,
 }: FormRendererProps) {
-    const { visibleSections, visibleQuestions } = evaluateVisibility(definition, answers);
+    const { visibleSections, visibleQuestions } =
+        visibility ?? evaluateVisibility(definition, answers);
     return (
         <div className="sd-form">
             {definition.sections.map((section) => (
-                <Reveal key={section.id} show={visibleSections.has(section.id)}>
+                <Reveal
+                    key={section.id}
+                    show={visibleSections.has(section.id)}
+                    sdNode={`s:${section.id}`}
+                >
                     <section className="sd-section">
                         <h2 className="sd-section-title">{section.title}</h2>
                         {section.description !== undefined && !hideDescriptions && (
@@ -49,6 +59,7 @@ export function FormRenderer({
                                     as="li"
                                     className="sd-question-item"
                                     show={visibleQuestions.has(question.id)}
+                                    sdNode={`q:${question.id}`}
                                 >
                                     <QuestionField
                                         question={question}

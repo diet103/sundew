@@ -28,6 +28,9 @@ export interface RevealProps {
     /** Rendered wrapper element — `li` inside `.sd-questions`, `div` for sections. */
     as?: ElementType;
     className?: string;
+    /** Stamped as data-sd-node so runtime chrome (the fill outline) can find
+     *  and scroll to this wrapper without a builder-style registry. */
+    sdNode?: string;
     children: ReactNode;
 }
 
@@ -39,7 +42,7 @@ const PHASE_CLASS: Record<RevealPhase, string> = {
     exit: 'sd-reveal-exit',
 };
 
-export function Reveal({ show, as: Tag = 'div', className, children }: RevealProps) {
+export function Reveal({ show, as: Tag = 'div', className, sdNode, children }: RevealProps) {
     // Nodes visible on first render mount settled — only later visibility
     // changes animate, so a restored draft doesn't replay every reveal.
     const [phase, setPhase] = useState<RevealPhase>(show ? 'open' : 'closed');
@@ -79,7 +82,11 @@ export function Reveal({ show, as: Tag = 'div', className, children }: RevealPro
 
     const classes = ['sd-reveal', PHASE_CLASS[phase], className].filter(Boolean).join(' ');
     return (
-        <Tag className={classes} inert={phase === 'exit' ? true : undefined}>
+        <Tag
+            className={classes}
+            inert={phase === 'exit' ? true : undefined}
+            data-sd-node={sdNode}
+        >
             <div className="sd-reveal-inner">{children}</div>
         </Tag>
     );
