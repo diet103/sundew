@@ -74,6 +74,15 @@ describe('FormRenderer visibility', () => {
         expect(titles).toEqual(['Field report', 'Botanical notes', 'Wrap-up']);
         expect(screen.queryByText('Arachnid notes')).not.toBeInTheDocument();
     });
+
+    it('reveals a literal-rule question once the rating crosses its bound', () => {
+        render(<Harness definition={specimenIntake()} />);
+        expect(screen.queryByText('Field notes')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('radio', { name: '3' }));
+        expect(screen.queryByText('Field notes')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('radio', { name: '4' }));
+        expect(screen.getByText('Field notes')).toBeInTheDocument();
+    });
 });
 
 describe('validation', () => {

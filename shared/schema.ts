@@ -8,9 +8,20 @@ const zId = z.uuid();
 const zTitle = z.string().max(LIMITS.titleChars);
 const zDescription = z.string().max(LIMITS.descriptionChars);
 
-export const zRuleOperator = z.enum(['equals', 'notEquals', 'includes', 'isAnswered']);
+export const zRuleOperator = z.enum([
+    'equals',
+    'notEquals',
+    'includes',
+    'isAnswered',
+    'contains',
+    'before',
+    'after',
+    'atLeast',
+    'atMost',
+]);
 
-// `value` is an option id on the source question; only `isAnswered` omits it.
+// `value` is an option id on the source question, or a literal (ISO date, decimal
+// number, or search text) depending on the operator; only `isAnswered` omits it.
 export const zRule = z
     .object({
         when: zId,

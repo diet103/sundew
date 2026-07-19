@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
-import type { FormDefinition, QuestionType } from '@shared/schema';
+import type { FormDefinition, Question, QuestionType, Visibility } from '@shared/schema';
+import { hasOptions } from '@shared/schema';
 import type { VisibilityResult } from '@shared/visibility';
 import { evaluateVisibility } from '@shared/visibility';
 import type { BuilderAction } from '../state/actions';
@@ -20,7 +21,7 @@ export interface CanvasCtx {
     visibility: VisibilityResult;
     /** questionId -> its option ids referenced by some rule (thread sources). */
     ruleSourceOptions: Map<string, string[]>;
-    /** Questions referenced by an isAnswered rule (whole-card sources). */
+    /** Questions referenced by an isAnswered or literal-valued rule (whole-card sources). */
     ruleSourceQuestions: Set<string>;
     justAddedId: string | null;
     onAutoFocusDone: () => void;
@@ -46,17 +47,22 @@ export function Canvas({ doc, dispatch, selection, onSelect, settling }: CanvasP
     const { ruleSourceOptions, ruleSourceQuestions } = useMemo(() => {
         const options = new Map<string, string[]>();
         const questions = new Set<string>();
-        const collect = (
-            visibleWhen: { rules: { when: string; value?: string }[] } | undefined,
-        ) => {
+        const byId = new Map<string, Question>();
+        for (const section of doc.sections) {
+            for (const question of section.questions) byId.set(question.id, question);
+        }
+        const collect = (visibleWhen: Visibility | undefined) => {
             if (!visibleWhen) return;
             for (const rule of visibleWhen.rules) {
-                if (rule.value === undefined) {
-                    questions.add(rule.when);
-                } else {
+                const source = byId.get(rule.when);
+                // Only option sources get per-option highlights; isAnswered and
+                // literal-valued rules light up the whole source card.
+                if (rule.value !== undefined && source && hasOptions(source)) {
                     const list = options.get(rule.when) ?? [];
                     if (!list.includes(rule.value)) list.push(rule.value);
                     options.set(rule.when, list);
+                } else {
+                    questions.add(rule.when);
                 }
             }
         };

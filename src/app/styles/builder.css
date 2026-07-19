@@ -1205,7 +1205,8 @@ input.bldr-qdesc:focus {
     padding: 0.5rem;
 }
 
-.bldr-rule select {
+.bldr-rule select,
+.bldr-rule input {
     grid-column: 1;
     min-width: 0;
     font-size: var(--text-sm);

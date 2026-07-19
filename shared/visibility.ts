@@ -1,4 +1,12 @@
-import type { Answers, AnswerValue, FormDefinition, Question, Rule, Visibility } from './schema';
+import type {
+    Answers,
+    AnswerValue,
+    FormDefinition,
+    Question,
+    Rule,
+    RuleOperator,
+    Visibility,
+} from './schema';
 import { hasOptions } from './schema';
 
 export interface VisibilityResult {
@@ -15,16 +23,84 @@ export function isAnswered(value: AnswerValue | undefined): boolean {
     return true;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Shared by equals/notEquals so the pair stays an exact negation. Number answers (rating) compare numerically. */
+function matchesEquals(rule: Rule, value: AnswerValue | undefined): boolean {
+    if (typeof value === 'number') return rule.value !== undefined && Number(rule.value) === value;
+    return typeof value === 'string' && value === rule.value;
+}
+
+/** Answer as a finite number, or NaN: ratings are numbers, number-format shortText is a numeric string. */
+function toNumber(value: AnswerValue | undefined): number {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && value.trim() !== '') return Number(value);
+    return NaN;
+}
+
+// Every operator is false against an unanswered or malformed value (except
+// notEquals, deliberately true when unanswered); rules never throw on
+// in-progress fill-page input.
 function evaluateRule(rule: Rule, value: AnswerValue | undefined): boolean {
     switch (rule.operator) {
         case 'isAnswered':
             return isAnswered(value);
         case 'equals':
-            return typeof value === 'string' && value === rule.value;
+            return matchesEquals(rule, value);
         case 'notEquals':
-            return !(typeof value === 'string' && value === rule.value);
+            return !matchesEquals(rule, value);
         case 'includes':
             return Array.isArray(value) && rule.value !== undefined && value.includes(rule.value);
+        case 'contains': {
+            const needle = (rule.value ?? '').trim().toLowerCase();
+            if (needle === '') return false;
+            return typeof value === 'string' && value.toLowerCase().includes(needle);
+        }
+        // ISO dates compare lexicographically; anything non-canonical fails the guard.
+        case 'before':
+            return typeof value === 'string' && DATE_RE.test(value) &&
+                rule.value !== undefined && DATE_RE.test(rule.value) && value < rule.value;
+        case 'after':
+            return typeof value === 'string' && DATE_RE.test(value) &&
+                rule.value !== undefined && DATE_RE.test(rule.value) && value > rule.value;
+        case 'atLeast': {
+            const n = toNumber(value);
+            const bound = Number(rule.value);
+            return Number.isFinite(n) && Number.isFinite(bound) && n >= bound;
+        }
+        case 'atMost': {
+            const n = toNumber(value);
+            const bound = Number(rule.value);
+            return Number.isFinite(n) && Number.isFinite(bound) && n <= bound;
+        }
+    }
+}
+
+/**
+ * Which operators a rule may use, given its source question. Single source of
+ * truth for the logic editor, publish checks, and doc normalization.
+ */
+export function ruleOperatorsFor(question: Question): RuleOperator[] {
+    switch (question.type) {
+        case 'select':
+        case 'radio':
+            return ['equals', 'notEquals', 'isAnswered'];
+        case 'checkbox':
+            return ['includes', 'isAnswered'];
+        case 'longText':
+            return ['contains', 'isAnswered'];
+        case 'rating':
+            return ['equals', 'atLeast', 'atMost', 'isAnswered'];
+        case 'shortText':
+            switch (question.format) {
+                case 'date':
+                    return ['equals', 'before', 'after', 'isAnswered'];
+                case 'number':
+                    return ['equals', 'atLeast', 'atMost', 'isAnswered'];
+                default:
+                    return ['contains', 'isAnswered'];
+            }
     }
 }
 
@@ -104,9 +180,6 @@ export interface SubmissionValidation {
     /** Answers with hidden/unknown entries stripped; store exactly this on success. */
     answers: Answers;
 }
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function answerError(question: Question, value: AnswerValue): string | null {
     switch (question.type) {
@@ -195,10 +268,27 @@ export function validateSubmission(def: FormDefinition, rawAnswers: Answers): Su
     return { ok: errors.length === 0, errors, answers };
 }
 
+/** Validates a literal (non-option) rule value against its source question; null when fine. */
+function literalRuleProblem(source: Question, rule: Rule): string | null {
+    const value = rule.value ?? '';
+    if (rule.operator === 'contains') {
+        return value.trim() === '' ? 'with no text to match' : null;
+    }
+    if (source.type === 'rating') {
+        const n = Number(value);
+        return Number.isInteger(n) && n >= 1 && n <= source.scale ? null : 'outside the rating scale';
+    }
+    if (source.type === 'shortText' && source.format === 'date') {
+        return DATE_RE.test(value) ? null : 'with an invalid date';
+    }
+    return value.trim() !== '' && Number.isFinite(Number(value)) ? null : 'with an invalid number';
+}
+
 /**
  * Publish-level checks beyond schema validity: a publishable form needs a title,
  * at least one question, no empty titles/options, and every rule resolving to a
- * real, preceding source question (and a real option where the operator needs one).
+ * real, preceding source question with an operator that fits it (and a real
+ * option or well-formed literal value where the operator needs one).
  */
 export function publishProblems(def: FormDefinition): string[] {
     const problems: string[] = [];
@@ -216,11 +306,19 @@ export function publishProblems(def: FormDefinition): string[] {
                 problems.push(`"${owner}" has a visibility rule pointing at a missing or later question`);
                 continue;
             }
-            if (rule.operator !== 'isAnswered') {
-                if (!hasOptions(source) || !source.options.some((o) => o.id === rule.value)) {
+            if (rule.operator === 'isAnswered') continue;
+            if (!ruleOperatorsFor(source).includes(rule.operator)) {
+                problems.push(`"${owner}" has a visibility rule that no longer fits its source question`);
+                continue;
+            }
+            if (hasOptions(source)) {
+                if (!source.options.some((o) => o.id === rule.value)) {
                     problems.push(`"${owner}" has a visibility rule pointing at a missing answer choice`);
                 }
+                continue;
             }
+            const literal = literalRuleProblem(source, rule);
+            if (literal) problems.push(`"${owner}" has a visibility rule ${literal}`);
         }
     };
 

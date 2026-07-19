@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Answers, FormDefinition } from './schema';
+import type { Answers, AnswerValue, FormDefinition, Question, RuleOperator } from './schema';
 import { SCHEMA_VERSION } from './schema';
 import { OPT_OTHER, OPT_PLANT, OPT_SPIDER, Q_FOUND, specimenIntake } from './seed';
 import {
@@ -59,6 +59,54 @@ function chainForm(): FormDefinition {
         ],
         settings: {},
     };
+}
+
+/** q1 configured per test; q2 visible when q1 matches the rule. */
+function literalChain(q1: Question, operator: RuleOperator, value?: string): FormDefinition {
+    return {
+        schemaVersion: SCHEMA_VERSION,
+        title: 'Literal',
+        sections: [
+            {
+                id: uuid(100),
+                title: 'Main',
+                questions: [
+                    q1,
+                    {
+                        id: uuid(2),
+                        type: 'shortText',
+                        format: 'text',
+                        title: 'Q2',
+                        required: false,
+                        visibleWhen: { mode: 'all', rules: [{ when: q1.id, operator, value }] },
+                    },
+                ],
+            },
+        ],
+        settings: {},
+    };
+}
+
+const textQ = (): Question => ({ id: uuid(1), type: 'longText', title: 'Q1', required: false });
+const dateQ = (): Question => ({
+    id: uuid(1),
+    type: 'shortText',
+    format: 'date',
+    title: 'Q1',
+    required: false,
+});
+const numberQ = (): Question => ({
+    id: uuid(1),
+    type: 'shortText',
+    format: 'number',
+    title: 'Q1',
+    required: false,
+});
+const ratingQ = (): Question => ({ id: uuid(1), type: 'rating', scale: 5, title: 'Q1', required: false });
+
+function shows(def: FormDefinition, answer?: AnswerValue): boolean {
+    const answers: Answers = answer === undefined ? {} : { [uuid(1)]: answer };
+    return evaluateVisibility(def, answers).visibleQuestions.has(uuid(2));
 }
 
 describe('isAnswered', () => {
@@ -159,6 +207,61 @@ describe('evaluateVisibility', () => {
         const missing = evaluateVisibility(def, {});
         expect(missing.visibleQuestions.has(uuid(1))).toBe(true);
         expect(missing.brokenRuleTargets.has(uuid(1))).toBe(true);
+    });
+});
+
+describe('literal operators', () => {
+    it('contains matches case-insensitively with a trimmed needle', () => {
+        expect(shows(literalChain(textQ(), 'contains', 'venus'), 'A Venus flytrap!')).toBe(true);
+        expect(shows(literalChain(textQ(), 'contains', '  Venus  '), 'a venus flytrap')).toBe(true);
+        expect(shows(literalChain(textQ(), 'contains', 'venus'), 'a sundew')).toBe(false);
+        expect(shows(literalChain(textQ(), 'contains', 'venus'))).toBe(false);
+    });
+
+    it('contains with an empty needle never matches', () => {
+        expect(shows(literalChain(textQ(), 'contains', ''), 'any answer at all')).toBe(false);
+        expect(shows(literalChain(textQ(), 'contains', '   '), 'any answer at all')).toBe(false);
+    });
+
+    it('before and after compare ISO dates strictly', () => {
+        expect(shows(literalChain(dateQ(), 'before', '2026-07-18'), '2026-07-17')).toBe(true);
+        expect(shows(literalChain(dateQ(), 'before', '2026-07-18'), '2026-07-18')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'before', '2026-07-18'), '2026-07-19')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'after', '2026-07-18'), '2026-07-19')).toBe(true);
+        expect(shows(literalChain(dateQ(), 'after', '2026-07-18'), '2026-07-18')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'equals', '2026-07-18'), '2026-07-18')).toBe(true);
+    });
+
+    it('date operators fail closed on partial or malformed input', () => {
+        expect(shows(literalChain(dateQ(), 'before', '2026-07-18'), '2026-7')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'before', '2026-07-18'), 'garbage')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'before', 'not-a-date'), '2026-07-17')).toBe(false);
+        expect(shows(literalChain(dateQ(), 'after', '2026-07-18'))).toBe(false);
+    });
+
+    it('atLeast and atMost bound rating answers inclusively', () => {
+        expect(shows(literalChain(ratingQ(), 'atLeast', '4'), 4)).toBe(true);
+        expect(shows(literalChain(ratingQ(), 'atLeast', '4'), 5)).toBe(true);
+        expect(shows(literalChain(ratingQ(), 'atLeast', '4'), 3)).toBe(false);
+        expect(shows(literalChain(ratingQ(), 'atLeast', '4'))).toBe(false);
+        expect(shows(literalChain(ratingQ(), 'atMost', '2'), 2)).toBe(true);
+        expect(shows(literalChain(ratingQ(), 'atMost', '2'), 3)).toBe(false);
+    });
+
+    it('atLeast and atMost coerce number-format text answers', () => {
+        expect(shows(literalChain(numberQ(), 'atLeast', '10'), '12.5')).toBe(true);
+        expect(shows(literalChain(numberQ(), 'atLeast', '10'), '9')).toBe(false);
+        expect(shows(literalChain(numberQ(), 'atLeast', '10'), 'abc')).toBe(false);
+        expect(shows(literalChain(numberQ(), 'atMost', '10'), '  '))
+            .toBe(false);
+    });
+
+    it('equals and notEquals are numeric-aware for rating answers', () => {
+        expect(shows(literalChain(ratingQ(), 'equals', '3'), 3)).toBe(true);
+        expect(shows(literalChain(ratingQ(), 'equals', '3'), 4)).toBe(false);
+        expect(shows(literalChain(ratingQ(), 'notEquals', '3'), 4)).toBe(true);
+        expect(shows(literalChain(ratingQ(), 'notEquals', '3'), 3)).toBe(false);
+        expect(shows(literalChain(ratingQ(), 'notEquals', '3'))).toBe(true);
     });
 });
 
@@ -269,5 +372,27 @@ describe('publishProblems', () => {
             rules: [{ when: uuid(3), operator: 'isAnswered' }],
         };
         expect(publishProblems(laterSource).join(' ')).toMatch(/missing or later question/);
+    });
+
+    it('catches malformed literal rule values', () => {
+        const problems = (def: FormDefinition) => publishProblems(def).join(' ');
+        expect(problems(literalChain(textQ(), 'contains', '   '))).toMatch(/no text to match/);
+        expect(problems(literalChain(dateQ(), 'before', 'not-a-date'))).toMatch(/invalid date/);
+        expect(problems(literalChain(numberQ(), 'atLeast', 'abc'))).toMatch(/invalid number/);
+        expect(problems(literalChain(ratingQ(), 'atLeast', '8'))).toMatch(/outside the rating scale/);
+        expect(problems(literalChain(ratingQ(), 'equals', '2.5'))).toMatch(/outside the rating scale/);
+    });
+
+    it('flags operators that no longer fit their source question', () => {
+        expect(publishProblems(literalChain(textQ(), 'before', '2026-07-18')).join(' ')).toMatch(
+            /no longer fits its source question/,
+        );
+    });
+
+    it('accepts well-formed literal rules', () => {
+        expect(publishProblems(literalChain(textQ(), 'contains', 'venus'))).toEqual([]);
+        expect(publishProblems(literalChain(dateQ(), 'after', '2026-07-18'))).toEqual([]);
+        expect(publishProblems(literalChain(numberQ(), 'atMost', '12.5'))).toEqual([]);
+        expect(publishProblems(literalChain(ratingQ(), 'atLeast', '4'))).toEqual([]);
     });
 });

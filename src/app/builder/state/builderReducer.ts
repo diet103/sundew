@@ -255,18 +255,19 @@ function applyDocAction(state: BuilderState, action: DocAction): BuilderState {
         }
         case 'SET_VISIBILITY': {
             const vis = action.visibility ?? undefined;
+            const options = action.coalesce ? { coalesceKey: `vis:${action.targetId}` } : {};
             if (action.targetKind === 'section') {
                 const section = findSection(doc, action.targetId);
                 if (!section) return state;
                 const next = withVisibility(section, vis);
                 if (next === section) return state;
-                return commitDoc(state, replaceSection(doc, section.id, next), 'Edit logic');
+                return commitDoc(state, replaceSection(doc, section.id, next), 'Edit logic', options);
             }
             const found = findQuestionWithSection(doc, action.targetId);
             if (!found) return state;
             const next = withVisibility(found.question, vis);
             if (next === found.question) return state;
-            return commitDoc(state, replaceQuestion(doc, found.section, next), 'Edit logic');
+            return commitDoc(state, replaceQuestion(doc, found.section, next), 'Edit logic', options);
         }
     }
 }

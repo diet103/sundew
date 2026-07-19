@@ -58,11 +58,17 @@ function ruleHint(doc: FormDefinition, rule: Rule): string {
     const label = index === -1 ? 'a missing question' : padIndex(index);
     if (rule.operator === 'isAnswered') return `${label} is answered`;
     const source = findQuestion(doc, rule.when);
-    const optionLabel =
-        source && hasOptions(source)
-            ? source.options.find((o) => o.id === rule.value)?.label
-            : undefined;
-    const value = `"${optionLabel ?? 'a removed choice'}"`;
+    // Option sources show the choice's label; literal sources show the value as typed.
+    let value: string;
+    if (source && !hasOptions(source)) {
+        value = rule.operator === 'contains' ? `"${rule.value ?? ''}"` : rule.value ?? '';
+    } else {
+        const optionLabel =
+            source && hasOptions(source)
+                ? source.options.find((o) => o.id === rule.value)?.label
+                : undefined;
+        value = `"${optionLabel ?? 'a removed choice'}"`;
+    }
     switch (rule.operator) {
         case 'equals':
             return `${label} = ${value}`;
@@ -70,6 +76,16 @@ function ruleHint(doc: FormDefinition, rule: Rule): string {
             return `${label} ≠ ${value}`;
         case 'includes':
             return `${label} includes ${value}`;
+        case 'contains':
+            return `${label} contains ${value}`;
+        case 'before':
+            return `${label} before ${value}`;
+        case 'after':
+            return `${label} after ${value}`;
+        case 'atLeast':
+            return `${label} ≥ ${value}`;
+        case 'atMost':
+            return `${label} ≤ ${value}`;
     }
 }
 

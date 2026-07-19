@@ -351,8 +351,56 @@ describe('CHANGE_QUESTION_TYPE', () => {
         expect(q && 'options' in q && q.options).toBe(
             original && 'options' in original && original.options,
         );
-        // Option ids survived, so the branch rules survive too.
+        // Option ids survived, so the branch rules survive too, remapped to the
+        // checkbox's equivalent operator.
         expect(next.doc.sections[1]?.visibleWhen?.rules[0]?.value).toBe(OPT_PLANT);
+        expect(next.doc.sections[1]?.visibleWhen?.rules[0]?.operator).toBe('includes');
+    });
+
+    it('remaps includes back to equals when a checkbox becomes a radio', () => {
+        let state = seeded();
+        const conditions = findQuestionWithSection(state.doc, qid(5))?.question;
+        const optionId = conditions && 'options' in conditions ? conditions.options[0]!.id : '';
+        state = builderReducer(state, {
+            kind: 'SET_VISIBILITY',
+            targetKind: 'question',
+            targetId: qid(8),
+            visibility: {
+                mode: 'all',
+                rules: [{ when: qid(5), operator: 'includes', value: optionId }],
+            },
+        });
+        state = builderReducer(state, {
+            kind: 'CHANGE_QUESTION_TYPE',
+            questionId: qid(5),
+            type: 'radio',
+            mintedOptionId: uuid(81),
+        });
+        const rule = findQuestionWithSection(state.doc, qid(8))?.question.visibleWhen?.rules[0];
+        expect(rule?.operator).toBe('equals');
+        expect(rule?.value).toBe(optionId);
+    });
+
+    it('flipping a shortText format drops rules whose operator no longer fits', () => {
+        let state = seeded();
+        state = builderReducer(state, {
+            kind: 'SET_VISIBILITY',
+            targetKind: 'question',
+            targetId: qid(8),
+            visibility: {
+                mode: 'all',
+                rules: [{ when: qid(2), operator: 'before', value: '2026-01-01' }],
+            },
+        });
+        expect(
+            findQuestionWithSection(state.doc, qid(8))?.question.visibleWhen?.rules,
+        ).toHaveLength(1);
+        state = builderReducer(state, {
+            kind: 'UPDATE_QUESTION',
+            questionId: qid(2),
+            patch: { format: 'text' },
+        });
+        expect(findQuestionWithSection(state.doc, qid(8))?.question.visibleWhen).toBeUndefined();
     });
 
     it('dropping options deletes rules keyed to them', () => {
@@ -565,6 +613,42 @@ describe('coalescing', () => {
         expect(findQuestionWithSection(undone.doc, qid(1))?.question.title).toBe('O');
         undone = builderReducer(undone, { kind: 'UNDO' });
         expect(findQuestionWithSection(undone.doc, qid(1))?.question.title).toBe('Observer name');
+    });
+
+    it('SET_VISIBILITY coalesces value typing only when asked', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(1_000_000);
+        const rule = (value: string) => ({
+            mode: 'all' as const,
+            rules: [{ when: qid(1), operator: 'contains' as const, value }],
+        });
+        let state = seeded();
+        state = builderReducer(state, {
+            kind: 'SET_VISIBILITY',
+            targetKind: 'question',
+            targetId: qid(8),
+            visibility: rule('v'),
+            coalesce: true,
+        });
+        vi.advanceTimersByTime(200);
+        state = builderReducer(state, {
+            kind: 'SET_VISIBILITY',
+            targetKind: 'question',
+            targetId: qid(8),
+            visibility: rule('ve'),
+            coalesce: true,
+        });
+        expect(state.history.past).toHaveLength(1);
+
+        // A non-coalescing rule edit (operator/source select) is its own undo step.
+        vi.advanceTimersByTime(200);
+        state = builderReducer(state, {
+            kind: 'SET_VISIBILITY',
+            targetKind: 'question',
+            targetId: qid(8),
+            visibility: rule('ven'),
+        });
+        expect(state.history.past).toHaveLength(2);
     });
 
     it('different targets never coalesce', () => {

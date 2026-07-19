@@ -114,6 +114,12 @@ test.describe('golden path', () => {
             await guest.getByRole('radio', { name: 'A plant' }).check();
             await expect(guest.getByRole('heading', { name: 'Botanical notes' })).toBeVisible();
 
+            // A literal rule too: Field notes appears once the rating hits 4.
+            const fieldNotes = guest.locator('label.sd-label', { hasText: 'Field notes' });
+            await expect(fieldNotes).toHaveCount(0);
+            await guest.getByRole('radio', { name: '4' }).check();
+            await expect(fieldNotes).toBeVisible();
+
             await guest.getByRole('button', { name: 'Submit' }).click();
             await expect(guest.getByText('Logged. Thanks for the field report.')).toBeVisible();
         } finally {

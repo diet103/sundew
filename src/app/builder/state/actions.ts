@@ -46,6 +46,8 @@ export type DocAction =
           targetKind: 'section' | 'question';
           targetId: string;
           visibility: Visibility | null;
+          /** Coalesce with the previous commit (typing in a rule value input). */
+          coalesce?: boolean;
       }
     | { kind: 'RESET_DOC'; doc: FormDefinition };
 
@@ -127,8 +129,9 @@ export function setVisibility(
     targetKind: 'section' | 'question',
     targetId: string,
     visibility: Visibility | null,
+    coalesce?: boolean,
 ): DocAction {
-    return { kind: 'SET_VISIBILITY', targetKind, targetId, visibility };
+    return { kind: 'SET_VISIBILITY', targetKind, targetId, visibility, coalesce };
 }
 
 /** Wholesale document replacement (e.g. reset to the demo form); undoable. */

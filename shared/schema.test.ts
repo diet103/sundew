@@ -55,4 +55,13 @@ describe('zRule', () => {
         expect(zRule.safeParse({ when, operator: 'isAnswered' }).success).toBe(true);
         expect(zRule.safeParse({ when, operator: 'equals', value: 'x' }).success).toBe(true);
     });
+
+    it('accepts the literal operators, valued only', () => {
+        const when = crypto.randomUUID();
+        for (const operator of ['contains', 'before', 'after', 'atLeast', 'atMost'] as const) {
+            expect(zRule.safeParse({ when, operator, value: 'x' }).success).toBe(true);
+            expect(zRule.safeParse({ when, operator }).success).toBe(false);
+        }
+        expect(zRule.safeParse({ when, operator: 'matches', value: 'x' }).success).toBe(false);
+    });
 });
