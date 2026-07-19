@@ -218,6 +218,18 @@ export async function unpublishForm(
     return result.meta.changes;
 }
 
+export async function getPublishedAt(
+    db: D1Database,
+    formId: string,
+    version: number,
+): Promise<number | null> {
+    const row = await db
+        .prepare('SELECT published_at FROM form_versions WHERE form_id = ? AND version = ?')
+        .bind(formId, version)
+        .first<{ published_at: number }>();
+    return row?.published_at ?? null;
+}
+
 export async function getVersionDefinition(
     db: D1Database,
     formId: string,

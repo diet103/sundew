@@ -42,6 +42,8 @@ export interface FormDetail {
     status: FormStatus;
     slug: string | null;
     publishedVersion: number | null;
+    /** When the currently published version went live; null when never published. */
+    publishedAt: number | null;
     updatedAt: number;
 }
 
@@ -73,6 +75,7 @@ export interface SaveConflictResponse {
 export interface PublishResponse {
     slug: string;
     version: number;
+    publishedAt: number;
 }
 
 export interface PublishErrorResponse {

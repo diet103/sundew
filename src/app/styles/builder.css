@@ -208,6 +208,13 @@
     gap: 0.45rem;
 }
 
+/* Quiet unpublished-changes tag next to Publish: muted, no color scream. */
+.bldr-publish-nudge {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    white-space: nowrap;
+}
+
 .bldr-popover {
     position: absolute;
     top: calc(100% + 0.55rem);

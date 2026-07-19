@@ -10,6 +10,7 @@ import {
     countFormsByOwner,
     deleteOwnedForm,
     getOwnedForm,
+    getPublishedAt,
     insertForm,
     listFormSummaries,
     publishForm,
@@ -89,6 +90,10 @@ forms.get('/:id', async (c) => {
     if (!id.success) return c.json({ error: 'notFound' }, 404);
     const row = await getOwnedForm(c.env.DB, id.data, c.get('userId')!);
     if (!row) return c.json({ error: 'notFound' }, 404);
+    const publishedAt =
+        row.published_version !== null
+            ? await getPublishedAt(c.env.DB, row.id, row.published_version)
+            : null;
     c.header('ETag', String(row.revision));
     return c.json({
         id: row.id,
@@ -98,6 +103,7 @@ forms.get('/:id', async (c) => {
         status: row.status,
         slug: row.slug,
         publishedVersion: row.published_version,
+        publishedAt,
         updatedAt: row.updated_at,
     });
 });
@@ -192,7 +198,7 @@ forms.post('/:id/publish', async (c) => {
             slug = newSlug();
         }
     }
-    return c.json({ slug: row.slug ?? slug, version });
+    return c.json({ slug: row.slug ?? slug, version, publishedAt: now });
 });
 
 forms.post('/:id/unpublish', async (c) => {

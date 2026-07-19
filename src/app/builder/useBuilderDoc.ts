@@ -26,6 +26,7 @@ export interface ServerFormMeta {
     status: FormStatus;
     slug: string | null;
     publishedVersion: number | null;
+    publishedAt: number | null;
 }
 
 export interface BuilderDoc {
@@ -117,6 +118,7 @@ export function useBuilderDoc(formId: string): BuilderDoc {
                     status: detail.status,
                     slug: detail.slug,
                     publishedVersion: detail.publishedVersion,
+                    publishedAt: detail.publishedAt,
                 });
                 setReady(true);
             } catch {
@@ -159,6 +161,7 @@ export function useBuilderDoc(formId: string): BuilderDoc {
             status: detail.status,
             slug: detail.slug,
             publishedVersion: detail.publishedVersion,
+            publishedAt: detail.publishedAt,
         });
     }, [formId, dispatch, resetAutosave]);
 

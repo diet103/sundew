@@ -25,6 +25,8 @@ export interface TopBarProps {
     lastSavedAt: number | null;
     onReloadConflict: () => void;
     hasEdits: boolean;
+    /** True only while the form is live and the working doc differs from the snapshot. */
+    hasUnpublishedChanges: boolean;
     publishOpen: boolean;
     onPublishToggle: () => void;
     publishMenu: ReactNode;
@@ -45,6 +47,7 @@ export function TopBar({
     lastSavedAt,
     onReloadConflict,
     hasEdits,
+    hasUnpublishedChanges,
     publishOpen,
     onPublishToggle,
     publishMenu,
@@ -113,6 +116,15 @@ export function TopBar({
                     onReloadConflict={onReloadConflict}
                 />
                 <div className="bldr-publish-wrap">
+                    {hasUnpublishedChanges && (
+                        <span
+                            className="bldr-publish-nudge mono"
+                            title="unpublished changes"
+                            aria-label="unpublished changes"
+                        >
+                            · edited
+                        </span>
+                    )}
                     <button
                         type="button"
                         className="bldr-btn bldr-btn-accent"

@@ -9,6 +9,7 @@ import '@app/styles/builder.css';
 import { guestDocKey, loadLocalDoc } from './autosave/localMirror';
 import { BuilderStoreProvider, createBuilderStore } from './state/useBuilderStore';
 import { isLocalFormId, useBuilderDoc } from './useBuilderDoc';
+import { usePublishedDiff } from './usePublishedDiff';
 import { TopBar } from './TopBar';
 import { PublishMenu } from './PublishMenu';
 import { DemoBanner } from './DemoBanner';
@@ -70,6 +71,14 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     const [autoPublish, setAutoPublish] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(false);
     const [settling, setSettling] = useState(startSettling);
+
+    // Live even while the publish menu is closed, so the top bar can show
+    // the "· edited" nudge. Only compares while the form is actually live.
+    const hasUnpublishedChanges = usePublishedDiff(
+        formId,
+        b.serverMeta?.status === 'published' ? b.serverMeta.publishedVersion : null,
+        b.doc,
+    );
 
     // The load-moment clock starts when the canvas actually mounts (b.ready),
     // not when this component does, so a slow doc load can't eat the animation.
@@ -136,6 +145,8 @@ function BuilderSessionApp({ formId }: { formId: string }) {
             status={b.serverMeta?.status ?? null}
             slug={b.serverMeta?.slug ?? null}
             publishedVersion={b.serverMeta?.publishedVersion ?? null}
+            publishedAt={b.serverMeta?.publishedAt ?? null}
+            hasUnpublishedChanges={hasUnpublishedChanges}
             autoStart={autoPublish}
             onPublished={b.updateServerMeta}
         />
@@ -159,6 +170,7 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                     lastSavedAt={b.lastSavedAt}
                     onReloadConflict={() => void b.reloadFromServer()}
                     hasEdits={b.hasEdits}
+                    hasUnpublishedChanges={hasUnpublishedChanges}
                     publishOpen={publishOpen}
                     onPublishToggle={() => setPublishOpen((v) => !v)}
                     publishMenu={publishMenu}

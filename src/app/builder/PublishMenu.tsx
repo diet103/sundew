@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormDefinition } from '@shared/schema';
 import { publishProblems } from '@shared/visibility';
 import type { FormStatus } from '@shared/api';
 import { api } from '@app/api/client';
 import { SignInButtons } from '@app/auth/SignInButtons';
+import { relativeTime } from '@app/lib/relativeTime';
 import type { ServerFormMeta } from './useBuilderDoc';
 
 export interface PublishMenuProps {
@@ -17,6 +18,9 @@ export interface PublishMenuProps {
     status: FormStatus | null;
     slug: string | null;
     publishedVersion: number | null;
+    publishedAt: number | null;
+    /** Computed at the session level (usePublishedDiff) so it is live even while closed. */
+    hasUnpublishedChanges: boolean;
     /** Continue straight into publishing (the post-sign-in intent flow). */
     autoStart: boolean;
     onPublished: (meta: ServerFormMeta) => void;
@@ -31,6 +35,8 @@ export function PublishMenu({
     status,
     slug,
     publishedVersion,
+    publishedAt,
+    hasUnpublishedChanges,
     autoStart,
     onPublished,
 }: PublishMenuProps) {
@@ -46,23 +52,6 @@ export function PublishMenu({
             setCopied(false);
         }
     }, [open]);
-
-    // Compare the working doc against the published snapshot to surface
-    // "published vN · unpublished changes". Version snapshots are immutable,
-    // so the entry never goes stale and is fetched at most once per version.
-    const publishedDefQuery = useQuery({
-        queryKey: ['forms', formId, 'versions', publishedVersion],
-        queryFn: () => api.getVersion(formId, publishedVersion ?? 0),
-        enabled: open && !isLocal && status === 'published' && publishedVersion !== null,
-        staleTime: Infinity,
-        gcTime: 60 * 60_000,
-    });
-    const publishedDef = publishedDefQuery.data ?? null;
-
-    const hasUnpublishedChanges = useMemo(
-        () => publishedDef !== null && JSON.stringify(publishedDef) !== JSON.stringify(doc),
-        [publishedDef, doc],
-    );
 
     // The workspace list and this form's detail both carry status/slug, so a
     // successful (un)publish re-validates exactly those two entries. Exact
@@ -85,7 +74,12 @@ export function PublishMenu({
                 // fetches the real snapshot once (immutable, staleTime
                 // Infinity), so it can never be seeded wrong.
                 invalidateFormStatus();
-                onPublished({ status: 'published', slug: res.slug, publishedVersion: res.version });
+                onPublished({
+                    status: 'published',
+                    slug: res.slug,
+                    publishedVersion: res.version,
+                    publishedAt: res.publishedAt,
+                });
             } else {
                 setProblems(res.problems);
             }
@@ -97,7 +91,7 @@ export function PublishMenu({
         mutationFn: () => api.unpublishForm(formId),
         onSuccess: () => {
             invalidateFormStatus();
-            onPublished({ status: 'unpublished', slug, publishedVersion });
+            onPublished({ status: 'unpublished', slug, publishedVersion, publishedAt });
         },
     });
 
@@ -159,7 +153,8 @@ export function PublishMenu({
         body = (
             <>
                 <p className="bldr-live mono">
-                    <span className="bldr-live-dot" aria-hidden="true" /> live · accepting responses
+                    <span className="bldr-live-dot" aria-hidden="true" /> live · v{publishedVersion}
+                    {publishedAt !== null && <> · published {relativeTime(publishedAt)}</>}
                 </p>
                 {shareUrl && (
                     <div className="bldr-share">
@@ -201,6 +196,7 @@ export function PublishMenu({
                         ))}
                     </ul>
                 )}
+                <p className="bldr-hint mono">link stays · form closes · reopen any time</p>
                 <button
                     type="button"
                     className="bldr-btn bldr-btn-quiet"
