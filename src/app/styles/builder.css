@@ -838,6 +838,20 @@ input.bldr-qdesc:focus {
     background-color: var(--accent-overlay);
 }
 
+/* ---- Form menu (document-level actions in the top bar) --------------------- */
+
+.bldr-formmenu {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bldr-menu-right {
+    left: auto;
+    right: 0;
+}
+
 /* ---- Section list navigator ----------------------------------------------- */
 
 .bldr-nav {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
@@ -95,6 +95,33 @@ describe('HomePage as a guest', () => {
             'href',
             '/forms/api/auth/google/start?returnTo=%2Fforms',
         );
+    });
+
+    it('deletes a guest form row only after confirm and drops its local key', () => {
+        mockUseSession.mockReturnValue({
+            user: null,
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
+        saveLocalDoc(guestDocKey('local-aaa'), specimenIntake());
+        saveLocalDoc(guestDocKey('local-bbb'), emptyForm());
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        renderAt('/', <HomePage />);
+
+        const row = screen.getByText('Specimen intake').closest('.catalog-row') as HTMLElement;
+        const deleteButton = within(row).getByRole('button', { name: 'Delete' });
+        fireEvent.click(deleteButton);
+        expect(window.localStorage.getItem(guestDocKey('local-aaa'))).not.toBeNull();
+
+        confirmSpy.mockReturnValue(true);
+        fireEvent.click(deleteButton);
+        expect(confirmSpy).toHaveBeenLastCalledWith(
+            'Delete "Specimen intake"? It only exists in this browser.',
+        );
+        expect(window.localStorage.getItem(guestDocKey('local-aaa'))).toBeNull();
+        expect(screen.queryByText('Specimen intake')).not.toBeInTheDocument();
+        expect(screen.getByText('Untitled form')).toBeInTheDocument();
     });
 });
 

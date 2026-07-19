@@ -596,6 +596,20 @@ describe('control actions and no-ops', () => {
         expect(state.history.past).toHaveLength(0);
     });
 
+    it('RESET_DOC replaces the whole document as one undoable step', () => {
+        let state = seeded({ kind: 'question', id: Q_FOUND });
+        const demo = chainDoc();
+        state = builderReducer(state, { kind: 'RESET_DOC', doc: demo });
+        expect(state.doc.title).toBe('Chain');
+        expect(state.selection).toBeNull();
+        expect(canUndo(state)).toBe(true);
+        state = builderReducer(state, { kind: 'UNDO' });
+        expect(state.doc.title).toBe('Specimen intake');
+        expect(state.selection).toEqual({ kind: 'question', id: Q_FOUND });
+        state = builderReducer(state, { kind: 'REDO' });
+        expect(state.doc.title).toBe('Chain');
+    });
+
     it('HYDRATE swaps the doc and resets history and selection', () => {
         let state = seeded({ kind: 'form' });
         state = builderReducer(state, { kind: 'ADD_SECTION', sectionId: uuid(50) });

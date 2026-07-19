@@ -127,6 +127,27 @@ describe('BuilderApp with a guest doc', () => {
         expect(within(source).queryByRole('option', { name: /Trap type/ })).toBeNull();
     });
 
+    it('resets to the demo form from the Form menu only after confirm', () => {
+        renderSeededBuilder();
+        const titleInput = () => screen.getByRole('textbox', { name: 'Form title' });
+        fireEvent.change(titleInput(), { target: { value: 'Renamed form' } });
+        expect(titleInput()).toHaveValue('Renamed form');
+
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        fireEvent.click(screen.getByRole('button', { name: 'Form' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
+        expect(confirmSpy).toHaveBeenCalledWith(
+            'Reset this form to the demo form? Everything in it will be replaced.',
+        );
+        expect(titleInput()).toHaveValue('Renamed form');
+
+        confirmSpy.mockReturnValue(true);
+        fireEvent.click(screen.getByRole('button', { name: 'Form' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
+        expect(titleInput()).toHaveValue('Specimen intake');
+        confirmSpy.mockRestore();
+    });
+
     it('toggles into the live preview and back to the builder', () => {
         renderSeededBuilder();
         fireEvent.click(screen.getByRole('button', { name: 'Preview' }));

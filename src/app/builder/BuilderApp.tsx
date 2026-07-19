@@ -145,6 +145,8 @@ function BuilderSessionApp({ formId }: { formId: string }) {
         <CardRegistryProvider>
             <div className={settling ? 'bldr bldr-settling-root' : 'bldr'}>
                 <TopBar
+                    formId={formId}
+                    isLocal={b.isLocal}
                     title={b.doc.title}
                     dispatch={b.dispatch}
                     canUndo={b.canUndo}

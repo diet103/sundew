@@ -46,7 +46,8 @@ export type DocAction =
           targetKind: 'section' | 'question';
           targetId: string;
           visibility: Visibility | null;
-      };
+      }
+    | { kind: 'RESET_DOC'; doc: FormDefinition };
 
 export type ControlAction =
     | { kind: 'SELECT'; selection: Selection | null }
@@ -128,6 +129,11 @@ export function setVisibility(
     visibility: Visibility | null,
 ): DocAction {
     return { kind: 'SET_VISIBILITY', targetKind, targetId, visibility };
+}
+
+/** Wholesale document replacement (e.g. reset to the demo form); undoable. */
+export function resetDoc(doc: FormDefinition): DocAction {
+    return { kind: 'RESET_DOC', doc };
 }
 
 export function select(selection: Selection | null): ControlAction {
