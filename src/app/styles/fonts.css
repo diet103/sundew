@@ -13,6 +13,14 @@
     font-weight: 200 800;
     font-display: swap;
     src: url('/forms/fonts/newsreader-wght.woff2') format('woff2');
+    /* Newsreader reports ascent 0.735 / descent 0.265 with cap-height 0.688, so
+       its caps hug the ascent and every vertically-centered control renders the
+       text ~1.5px high. Rebalance the metrics box symmetrically around the cap
+       band (ascent - descent = cap-height) while keeping ascent + descent = 1em
+       so no element's box height changes — only the glyphs settle to center. */
+    ascent-override: 84.4%;
+    descent-override: 15.6%;
+    line-gap-override: 0%;
 }
 @font-face {
     font-family: 'Spline Sans Mono';
