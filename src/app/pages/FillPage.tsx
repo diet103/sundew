@@ -9,6 +9,7 @@ import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
 import { useDrafts } from '@app/runtime/drafts/useDrafts';
+import { DraftsMenu } from '@app/runtime/drafts/DraftsMenu';
 import { SundewMark } from '@app/components/SundewMark';
 
 // Respondent-facing footer: neutral voice, links back to the product.
@@ -110,6 +111,21 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
         submitMutation.mutate(state.answers);
     };
 
+    const handleNewDraft = () => {
+        drafts.newDraft();
+        state.replaceAnswers({});
+        setServerErrors([]);
+        setPruned(false);
+    };
+
+    const handleResume = (id: string) => {
+        const resumed = drafts.resume(id);
+        if (resumed === null) return;
+        state.replaceAnswers(resumed.answers);
+        setServerErrors([]);
+        setPruned(resumed.droppedCount > 0);
+    };
+
     if (done) {
         return (
             <FillShell>
@@ -136,6 +152,14 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                 {fill.definition.description !== undefined && (
                     <p className="fill-description">{fill.definition.description}</p>
                 )}
+                <div className="fill-drafts-row">
+                    <DraftsMenu
+                        drafts={drafts}
+                        definition={fill.definition}
+                        onNewDraft={handleNewDraft}
+                        onResume={handleResume}
+                    />
+                </div>
                 {drafts.ready.restored && (
                     <p className="mono quiet-notice">draft restored · saved in this browser</p>
                 )}

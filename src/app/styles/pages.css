@@ -357,6 +357,86 @@
     margin-top: 1.75rem;
 }
 
+/* ---- Fill drafts (menu + quiet indicators) -------------------------------- */
+.fill-drafts-row {
+    margin: 1rem 0 0.25rem;
+}
+
+.fill-drafts-bar {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.fill-drafts-btn {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.3em 0.8em;
+    cursor: pointer;
+}
+
+.fill-drafts-btn:hover,
+.fill-drafts-btn[aria-expanded='true'] {
+    color: var(--gray-0);
+    border-color: var(--accent-regular);
+}
+
+.fill-drafts-menu {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    z-index: 20;
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    min-width: 10rem;
+    padding: 0.3rem;
+}
+
+.fill-drafts-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    text-align: left;
+    font-size: var(--text-sm);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4em 0.6em;
+    color: var(--gray-0);
+    cursor: pointer;
+}
+
+.fill-drafts-item:hover {
+    background-color: var(--accent-overlay);
+}
+
+.fill-drafts-item-state {
+    color: var(--muted);
+}
+
+.fill-drafts-status {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fill-drafts-warn {
+    margin-top: 0.5rem;
+    font-size: var(--text-sm);
+    color: var(--crimson);
+}
+
 /* The page's one load moment: title leads, the sheet settles in behind it. */
 @keyframes fill-settle {
     from {
