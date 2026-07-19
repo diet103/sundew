@@ -333,10 +333,23 @@ export function SectionListPanel({ doc, dispatch, selection, onSelect }: Section
     };
 
     // pointerWithin gives precise row targeting for pointer drags; keyboard
-    // drags have no pointer, so rectIntersection picks up the slack.
+    // drags have no pointer, so rectIntersection picks up the slack. Section
+    // drags only consider section droppables: otherwise the small question
+    // rows always win the collision and the whole-section <li> target (which
+    // encloses them) becomes unhittable.
     const collisionDetection: CollisionDetection = (args) => {
-        const within = pointerWithin(args);
-        return within.length > 0 ? within : rectIntersection(args);
+        const activeKind = parseNavId(args.active.id)?.kind;
+        const scoped =
+            activeKind === 'section'
+                ? {
+                      ...args,
+                      droppableContainers: args.droppableContainers.filter(
+                          (container) => parseNavId(container.id)?.kind === 'section',
+                      ),
+                  }
+                : args;
+        const within = pointerWithin(scoped);
+        return within.length > 0 ? within : rectIntersection(scoped);
     };
 
     const describe = (id: UniqueIdentifier): string => {
@@ -377,7 +390,7 @@ export function SectionListPanel({ doc, dispatch, selection, onSelect }: Section
         onDragEnd({ active, over }) {
             return over
                 ? `${describe(active.id)} moved to ${placeOf(over.id)}.`
-                : `${describe(active.id)} dropped.`;
+                : `Reordering cancelled. ${describe(active.id)} returned to its start position.`;
         },
         onDragCancel({ active }) {
             return `Reordering cancelled. ${describe(active.id)} returned to its start position.`;
@@ -407,16 +420,22 @@ export function SectionListPanel({ doc, dispatch, selection, onSelect }: Section
                 questionIds: s.questionIds.filter((q) => q !== a.id),
             }));
             if (o.kind === 'section') {
-                // Dropping on a section row appends; this is also the only
-                // target an empty section offers.
+                // Hovering a section header row inserts at the section start,
+                // matching where the header sits; this is also the only target
+                // an empty section offers.
                 if (!without.some((s) => s.id === o.id)) return prev;
                 return without.map((s) =>
-                    s.id === o.id ? { ...s, questionIds: [...s.questionIds, a.id] } : s,
+                    s.id === o.id ? { ...s, questionIds: [a.id, ...s.questionIds] } : s,
                 );
             }
             const target = without.find((s) => s.questionIds.includes(o.id));
             if (!target) return prev;
-            const at = target.questionIds.indexOf(o.id);
+            // Standard sortable semantics: dragging onto a row you were above
+            // lands BELOW it (and vice versa), so each row crossed advances the
+            // draft by exactly one slot and the section end stays reachable.
+            const flat = prev.flatMap((s) => s.questionIds);
+            const movingDown = flat.indexOf(a.id) < flat.indexOf(o.id);
+            const at = target.questionIds.indexOf(o.id) + (movingDown ? 1 : 0);
             return without.map((s) =>
                 s.id === target.id
                     ? {
@@ -438,7 +457,9 @@ export function SectionListPanel({ doc, dispatch, selection, onSelect }: Section
             const draft = draftOrder;
             setDraftOrder(null);
             setActiveQuestionId(null);
-            if (!draft) return;
+            // Dropping outside every droppable cancels, per the usual dnd
+            // contract; only an on-target drop commits the draft.
+            if (!draft || !over) return;
             const target = draft.find((s) => s.questionIds.includes(a.id));
             if (!target) return;
             // The reducer no-ops (no history entry) when nothing moved.

@@ -540,7 +540,9 @@
 
 /* Title and description live in permanent slots so selecting a card never
    changes its height: one class covers the static div and the input with
-   identical metrics, and the description slot animates 0fr -> 1fr. */
+   identical metrics (single line, clipped with an ellipsis, so long text
+   cannot wrap the div variant taller than the input), and the description
+   slot animates 0fr -> 1fr. */
 .bldr-qmain {
     display: block;
     min-width: 0;
@@ -566,6 +568,9 @@
     border-bottom: 1px dashed transparent;
     border-radius: 0;
     padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bldr-qtitle-empty {
@@ -610,6 +615,9 @@ input.bldr-qtitle:focus {
     border-bottom: 1px dashed transparent;
     border-radius: 0;
     padding: 0.05em 0 0.15em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 input.bldr-qdesc:hover,
