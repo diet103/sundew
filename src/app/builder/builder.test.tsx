@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { specimenIntake } from '@shared/seed';
+import { renderWithQueryClient } from '@app/testUtils';
 import { guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import BuilderApp from './BuilderApp';
 
@@ -42,7 +43,7 @@ const FORM_ID = 'local-11111111-2222-4333-8444-555555555555';
 
 function renderSeededBuilder() {
     saveLocalDoc(guestDocKey(FORM_ID), specimenIntake());
-    return render(<BuilderApp formId={FORM_ID} />);
+    return renderWithQueryClient(<BuilderApp formId={FORM_ID} />);
 }
 
 beforeEach(() => {
@@ -86,12 +87,8 @@ describe('BuilderApp with a guest doc', () => {
 
     it('marks conditional sections dormant with a human-readable hint', () => {
         renderSeededBuilder();
-        expect(
-            screen.getByText('hidden · shown when Q-03 = "A plant"'),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByText('hidden · shown when Q-03 = "A spider"'),
-        ).toBeInTheDocument();
+        expect(screen.getByText('hidden · shown when Q-03 = "A plant"')).toBeInTheDocument();
+        expect(screen.getByText('hidden · shown when Q-03 = "A spider"')).toBeInTheDocument();
     });
 
     it('lists only preceding questions as logic sources for a section', () => {

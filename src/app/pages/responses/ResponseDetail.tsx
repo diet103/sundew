@@ -1,7 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import type { AnswerValue, FormDefinition, Question } from '@shared/schema';
 import { evaluateVisibility } from '@shared/visibility';
 import { api } from '@app/api/client';
-import { useResource } from '@app/api/useResource';
 
 export interface ResponseDetailProps {
     formId: string;
@@ -35,14 +35,21 @@ export function ResponseDetail({
     getDefinition,
     onDeleted,
 }: ResponseDetailProps) {
-    const detail = useResource(async () => {
-        const submission = await api.getSubmission(formId, submissionId);
-        const definition = await getDefinition(submission.formVersion);
-        return { submission, definition };
-    }, [formId, submissionId]);
+    // A submission never changes after it lands, so the pair of fetches
+    // (submission + the version-pinned definition it answered) caches as one
+    // unit and reopening a row is instant.
+    const detail = useQuery({
+        queryKey: ['forms', formId, 'submissions', submissionId],
+        queryFn: async () => {
+            const submission = await api.getSubmission(formId, submissionId);
+            const definition = await getDefinition(submission.formVersion);
+            return { submission, definition };
+        },
+        staleTime: Infinity,
+    });
 
-    if (detail.loading) return <p className="mono resp-detail-note">loading…</p>;
-    if (detail.error !== null || detail.data === null) {
+    if (detail.isPending) return <p className="mono resp-detail-note">loading…</p>;
+    if (detail.isError) {
         return <p className="mono resp-detail-note">Could not load this response.</p>;
     }
     const { submission, definition } = detail.data;

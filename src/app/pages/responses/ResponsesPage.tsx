@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'wouter';
-import type { FormDetail, SubmissionSummary } from '@shared/api';
+import type { InfiniteData } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { FormDetail, SubmissionListResponse, SubmissionSummary } from '@shared/api';
 import type { FormDefinition } from '@shared/schema';
 import { api } from '@app/api/client';
-import { useResource } from '@app/api/useResource';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import { AppFooter } from '@app/components/AppFooter';
@@ -73,61 +74,31 @@ function StatusLine({ form }: { form: FormDetail }) {
 }
 
 function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
-    const [items, setItems] = useState<SubmissionSummary[]>([]);
-    const [nextCursor, setNextCursor] = useState<string | null>(null);
-    const [listState, setListState] = useState<'loading' | 'ready' | 'error'>('loading');
-    const [loadingMore, setLoadingMore] = useState(false);
+    const queryClient = useQueryClient();
     const [exporting, setExporting] = useState(false);
     const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
-    const versionCache = useRef(new Map<number, Promise<FormDefinition>>());
 
+    const submissionsKey = ['forms', formId, 'submissions'] as const;
+    const submissions = useInfiniteQuery({
+        queryKey: submissionsKey,
+        queryFn: ({ pageParam }) => api.getSubmissions(formId, pageParam),
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    });
+    const items = submissions.data?.pages.flatMap((page) => page.items) ?? [];
+
+    // Published snapshots are immutable: /versions/:v can never change once it
+    // exists, so the cache entry never goes stale and is kept for the session.
     const getDefinition = useCallback(
-        (version: number): Promise<FormDefinition> => {
-            let promise = versionCache.current.get(version);
-            if (promise === undefined) {
-                promise = api.getVersion(formId, version);
-                promise.catch(() => versionCache.current.delete(version));
-                versionCache.current.set(version, promise);
-            }
-            return promise;
-        },
-        [formId],
+        (version: number): Promise<FormDefinition> =>
+            queryClient.fetchQuery({
+                queryKey: ['forms', formId, 'versions', version],
+                queryFn: () => api.getVersion(formId, version),
+                staleTime: Infinity,
+                gcTime: 60 * 60_000,
+            }),
+        [queryClient, formId],
     );
-
-    useEffect(() => {
-        let cancelled = false;
-        setListState('loading');
-        setItems([]);
-        setNextCursor(null);
-        api.getSubmissions(formId).then(
-            (page) => {
-                if (cancelled) return;
-                setItems(page.items);
-                setNextCursor(page.nextCursor);
-                setListState('ready');
-            },
-            () => {
-                if (!cancelled) setListState('error');
-            },
-        );
-        return () => {
-            cancelled = true;
-        };
-    }, [formId]);
-
-    const loadMore = async () => {
-        if (nextCursor === null) return;
-        setLoadingMore(true);
-        try {
-            const page = await api.getSubmissions(formId, nextCursor);
-            setItems((prev) => [...prev, ...page.items]);
-            setNextCursor(page.nextCursor);
-        } catch {
-            // keep the current page; the button stays available to retry
-        } finally {
-            setLoadingMore(false);
-        }
-    };
 
     const toggle = (id: string, isOpen: boolean) => {
         setOpenIds((prev) => {
@@ -138,8 +109,20 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
         });
     };
 
+    // A deleted response is dropped from every cached page in place; no
+    // refetch needed since the server-side delete is idempotent.
     const removeItem = (id: string) => {
-        setItems((prev) => prev.filter((item) => item.id !== id));
+        queryClient.setQueryData<InfiniteData<SubmissionListResponse>>(submissionsKey, (data) =>
+            data === undefined
+                ? data
+                : {
+                      ...data,
+                      pages: data.pages.map((page) => ({
+                          ...page,
+                          items: page.items.filter((item) => item.id !== id),
+                      })),
+                  },
+        );
     };
 
     // Demo scale (<=1000 submissions): page through everything, hydrate details
@@ -174,8 +157,10 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
         }
     };
 
-    if (listState === 'loading') return <p className="mono quiet-notice">loading…</p>;
-    if (listState === 'error') return <p className="mono quiet-notice">Could not load responses.</p>;
+    if (submissions.isPending) return <p className="mono quiet-notice">loading…</p>;
+    if (submissions.isError) {
+        return <p className="mono quiet-notice">Could not load responses.</p>;
+    }
 
     if (items.length === 0) {
         return (
@@ -229,15 +214,15 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
                     </li>
                 ))}
             </ul>
-            {nextCursor !== null && (
+            {submissions.hasNextPage && (
                 <div className="resp-load-more">
                     <button
                         type="button"
                         className="text-button mono"
-                        disabled={loadingMore}
-                        onClick={() => void loadMore()}
+                        disabled={submissions.isFetchingNextPage}
+                        onClick={() => void submissions.fetchNextPage()}
                     >
-                        {loadingMore ? 'Loading…' : 'Load more'}
+                        {submissions.isFetchingNextPage ? 'Loading…' : 'Load more'}
                     </button>
                 </div>
             )}
@@ -247,10 +232,11 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
 
 export function ResponsesPage({ formId }: { formId: string }) {
     const { user, loading } = useSession();
-    const form = useResource(
-        () => (user ? api.getForm(formId) : Promise.resolve(null)),
-        [formId, user ? user.id : null],
-    );
+    const form = useQuery({
+        queryKey: ['forms', formId],
+        queryFn: () => api.getForm(formId),
+        enabled: user !== null,
+    });
 
     if (loading) {
         return (
@@ -274,11 +260,9 @@ export function ResponsesPage({ formId }: { formId: string }) {
     return (
         <div className="page-shell">
             <main className="page-main">
-                {form.loading && <p className="mono quiet-notice">loading…</p>}
-                {!form.loading && (form.error !== null || form.data === null) && (
-                    <p className="mono quiet-notice">Could not load this form.</p>
-                )}
-                {form.data !== null && (
+                {form.isPending && <p className="mono quiet-notice">loading…</p>}
+                {form.isError && <p className="mono quiet-notice">Could not load this form.</p>}
+                {form.data !== undefined && (
                     <>
                         <header className="resp-header">
                             <h1 className="resp-title">

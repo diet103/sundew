@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
+import { useStore } from 'zustand';
 import type { FormDefinition } from '@shared/schema';
-import { emptyForm } from '@shared/schema';
 import type { FormStatus } from '@shared/api';
 import { api } from '@app/api/client';
 import { useSession } from '@app/auth/useSession';
@@ -12,21 +13,14 @@ import {
     select as selectAction,
     undo as undoAction,
 } from './state/actions';
-import { builderReducer } from './state/builderReducer';
 import { canRedo as canRedoSel, canUndo as canUndoSel } from './state/selectors';
 import type { Selection } from './state/types';
-import { createInitialState } from './state/types';
-import { deleteLocalDoc, guestDocKey, loadLocalDoc, saveLocalDoc } from './autosave/localMirror';
+import { useBuilderStoreContext } from './state/useBuilderStore';
+import { deleteLocalDoc, guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import { useAutosave } from './autosave/useAutosave';
 
 export type BuilderSaveState =
-    | 'localSaved'
-    | 'idle'
-    | 'dirty'
-    | 'saving'
-    | 'error'
-    | 'offline'
-    | 'conflict';
+    'localSaved' | 'idle' | 'dirty' | 'saving' | 'error' | 'offline' | 'conflict';
 
 export interface ServerFormMeta {
     status: FormStatus;
@@ -60,18 +54,20 @@ export function isLocalFormId(formId: string): boolean {
 }
 
 /**
- * Owns the builder reducer plus persistence. Guest (`local-*`) docs mirror to
- * localStorage on every change — that IS the save. Server docs hydrate from the
- * API and run the autosave machine. Mount with a stable formId (key the
- * component on it); the claim flow navigates to a new id, which remounts.
+ * Wires the per-session builder store (see useBuilderStore.ts) to
+ * persistence. Guest (`local-*`) docs mirror to localStorage on every change
+ * — that IS the save. Server docs hydrate from the API and run the autosave
+ * machine; the initial GET stays a direct api call on purpose, because the
+ * hydrate handshake (skip-edit flag + machine reset) must never serve a
+ * cached document. Mount with a stable formId (key the component on it); the
+ * claim flow navigates to a new id, which remounts.
  */
 export function useBuilderDoc(formId: string): BuilderDoc {
     const isLocal = isLocalFormId(formId);
-    const [state, dispatch] = useReducer(builderReducer, formId, (id) =>
-        createInitialState(
-            isLocalFormId(id) ? (loadLocalDoc(guestDocKey(id)) ?? emptyForm()) : emptyForm(),
-        ),
-    );
+    const store = useBuilderStoreContext();
+    const state = useStore(store);
+    const { dispatch } = state;
+    const queryClient = useQueryClient();
     const [ready, setReady] = useState(isLocal);
     const [loadError, setLoadError] = useState(false);
     const [serverMeta, setServerMeta] = useState<ServerFormMeta | null>(null);
@@ -130,9 +126,11 @@ export function useBuilderDoc(formId: string): BuilderDoc {
         return () => {
             cancelled = true;
         };
-    }, [formId, isLocal, resetAutosave]);
+    }, [formId, isLocal, dispatch, resetAutosave]);
 
     // Claim flow: a signed-in user editing a guest doc gets a server form.
+    // The sequencing is deliberate: create on the server, drop the local
+    // mirror, then navigate (which remounts the builder on the new id).
     const { user } = useSession();
     const [, navigate] = useLocation();
     const claimingRef = useRef(false);
@@ -143,12 +141,14 @@ export function useBuilderDoc(formId: string): BuilderDoc {
             try {
                 const created = await api.createForm(docRef.current);
                 deleteLocalDoc(guestDocKey(formId));
+                void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
+                void queryClient.invalidateQueries({ queryKey: ['me'] });
                 navigate(`/edit/${created.id}`, { replace: true });
             } catch {
                 claimingRef.current = false;
             }
         })();
-    }, [isLocal, user, formId, navigate]);
+    }, [isLocal, user, formId, navigate, queryClient]);
 
     const reloadFromServer = useCallback(async () => {
         const detail = await api.getForm(formId);
@@ -160,13 +160,16 @@ export function useBuilderDoc(formId: string): BuilderDoc {
             slug: detail.slug,
             publishedVersion: detail.publishedVersion,
         });
-    }, [formId, resetAutosave]);
+    }, [formId, dispatch, resetAutosave]);
 
-    const select = useCallback((selection: Selection | null) => {
-        dispatch(selectAction(selection));
-    }, []);
-    const undo = useCallback(() => dispatch(undoAction()), []);
-    const redo = useCallback(() => dispatch(redoAction()), []);
+    const select = useCallback(
+        (selection: Selection | null) => {
+            dispatch(selectAction(selection));
+        },
+        [dispatch],
+    );
+    const undo = useCallback(() => dispatch(undoAction()), [dispatch]);
+    const redo = useCallback(() => dispatch(redoAction()), [dispatch]);
 
     const saveState: BuilderSaveState = isLocal
         ? 'localSaved'

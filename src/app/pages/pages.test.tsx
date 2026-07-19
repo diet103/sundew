@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
@@ -11,6 +11,7 @@ import { specimenIntake } from '@shared/seed';
 import { GUEST_DOC_PREFIX, guestDocKey, saveLocalDoc } from '@app/builder/autosave/localMirror';
 import { api } from '@app/api/client';
 import { useSession } from '@app/auth/useSession';
+import { TestQueryProvider, createTestQueryClient } from '@app/testUtils';
 import { HomePage } from './HomePage';
 import { buildCsv } from './responses/exportCsv';
 
@@ -32,7 +33,11 @@ const mockUseSession = vi.mocked(useSession);
 
 function renderAt(path: string, ui: React.ReactElement) {
     const location = memoryLocation({ path, record: true });
-    render(<Router hook={location.hook}>{ui}</Router>);
+    render(
+        <TestQueryProvider client={createTestQueryClient()}>
+            <Router hook={location.hook}>{ui}</Router>
+        </TestQueryProvider>,
+    );
     return location;
 }
 
@@ -143,8 +148,41 @@ describe('HomePage signed in', () => {
 
         confirmSpy.mockReturnValue(true);
         fireEvent.click(deleteButtons[0]!);
-        expect(confirmSpy).toHaveBeenLastCalledWith('Delete "Field survey" and all of its responses?');
-        expect(api.deleteForm).toHaveBeenCalledWith('f1');
+        expect(confirmSpy).toHaveBeenLastCalledWith(
+            'Delete "Field survey" and all of its responses?',
+        );
+        await waitFor(() => expect(api.deleteForm).toHaveBeenCalledWith('f1'));
+    });
+
+    it('optimistically removes a deleted form and rolls back when the delete fails', async () => {
+        mockUseSession.mockReturnValue({ user, loading: false, refresh: async () => {} });
+        // First load resolves; any refetch after the failed delete hangs, so a
+        // reappearing row can only come from the onError rollback.
+        vi.mocked(api.listForms)
+            .mockResolvedValueOnce(forms)
+            .mockImplementation(() => new Promise<FormSummary[]>(() => {}));
+        let rejectDelete: (error: Error) => void = () => {};
+        vi.mocked(api.deleteForm).mockImplementation(
+            () =>
+                new Promise<void>((_resolve, reject) => {
+                    rejectDelete = reject;
+                }),
+        );
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        renderAt('/', <HomePage />);
+
+        await screen.findByText('Field survey');
+        fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]!);
+
+        // Optimistic: the row is gone before the server answers.
+        await waitFor(() => expect(screen.queryByText('Field survey')).not.toBeInTheDocument());
+        expect(screen.getByText('Draft one')).toBeInTheDocument();
+
+        act(() => rejectDelete(new Error('boom')));
+
+        // Rollback: the snapshot is restored and the failure is surfaced.
+        expect(await screen.findByText('Field survey')).toBeInTheDocument();
+        expect(screen.getByText('could not delete the form · try again')).toBeInTheDocument();
     });
 });
 

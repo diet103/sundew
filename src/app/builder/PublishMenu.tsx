@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FormDefinition } from '@shared/schema';
 import { publishProblems } from '@shared/visibility';
 import type { FormStatus } from '@shared/api';
@@ -33,11 +34,10 @@ export function PublishMenu({
     autoStart,
     onPublished,
 }: PublishMenuProps) {
+    const queryClient = useQueryClient();
     const panelRef = useRef<HTMLDivElement>(null);
     const [problems, setProblems] = useState<string[] | null>(null);
-    const [busy, setBusy] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [publishedDef, setPublishedDef] = useState<FormDefinition | null>(null);
 
     useEffect(() => {
         if (open) panelRef.current?.focus();
@@ -48,47 +48,65 @@ export function PublishMenu({
     }, [open]);
 
     // Compare the working doc against the published snapshot to surface
-    // "published vN · unpublished changes".
-    useEffect(() => {
-        if (!open || isLocal || status !== 'published' || publishedVersion === null) return;
-        let cancelled = false;
-        void api
-            .getVersion(formId, publishedVersion)
-            .then((def) => {
-                if (!cancelled) setPublishedDef(def);
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-        };
-    }, [open, isLocal, status, publishedVersion, formId]);
+    // "published vN · unpublished changes". Version snapshots are immutable,
+    // so the entry never goes stale; a successful publish seeds it below.
+    const publishedDefQuery = useQuery({
+        queryKey: ['forms', formId, 'versions', publishedVersion],
+        queryFn: () => api.getVersion(formId, publishedVersion ?? 0),
+        enabled: open && !isLocal && status === 'published' && publishedVersion !== null,
+        staleTime: Infinity,
+        gcTime: 60 * 60_000,
+    });
+    const publishedDef = publishedDefQuery.data ?? null;
 
     const hasUnpublishedChanges = useMemo(
         () => publishedDef !== null && JSON.stringify(publishedDef) !== JSON.stringify(doc),
         [publishedDef, doc],
     );
 
-    const doPublish = async () => {
+    // The workspace list and this form's detail both carry status/slug, so a
+    // successful (un)publish re-validates exactly those two entries. Exact
+    // keys on purpose: a prefix match would also churn the immutable
+    // ['forms', id, 'versions', v] snapshots.
+    const invalidateFormStatus = () => {
+        void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
+        void queryClient.invalidateQueries({ queryKey: ['forms', formId], exact: true });
+    };
+
+    const publishMutation = useMutation({
+        mutationFn: () => api.publishForm(formId),
+        onSuccess: (res) => {
+            if (res.ok) {
+                setProblems(null);
+                // The just-published snapshot IS the working doc; seed the
+                // cache so the comparison query never refetches it.
+                queryClient.setQueryData(['forms', formId, 'versions', res.version], doc);
+                invalidateFormStatus();
+                onPublished({ status: 'published', slug: res.slug, publishedVersion: res.version });
+            } else {
+                setProblems(res.problems);
+            }
+        },
+        onError: () => setProblems(['Could not reach the server · try again']),
+    });
+
+    const unpublishMutation = useMutation({
+        mutationFn: () => api.unpublishForm(formId),
+        onSuccess: () => {
+            invalidateFormStatus();
+            onPublished({ status: 'unpublished', slug, publishedVersion });
+        },
+    });
+
+    const busy = publishMutation.isPending || unpublishMutation.isPending;
+
+    const doPublish = () => {
         const clientProblems = publishProblems(doc);
         if (clientProblems.length > 0) {
             setProblems(clientProblems);
             return;
         }
-        setBusy(true);
-        try {
-            const res = await api.publishForm(formId);
-            if (res.ok) {
-                setProblems(null);
-                setPublishedDef(doc);
-                onPublished({ status: 'published', slug: res.slug, publishedVersion: res.version });
-            } else {
-                setProblems(res.problems);
-            }
-        } catch {
-            setProblems(['Could not reach the server · try again']);
-        } finally {
-            setBusy(false);
-        }
+        publishMutation.mutate();
     };
 
     const autoStartedRef = useRef(false);
@@ -96,7 +114,7 @@ export function PublishMenu({
         if (!open || !autoStart || isLocal || autoStartedRef.current) return;
         if (status === 'published') return;
         autoStartedRef.current = true;
-        void doPublish();
+        doPublish();
     }, [open, autoStart, isLocal, status]);
 
     if (!open) return null;
@@ -167,7 +185,7 @@ export function PublishMenu({
                             type="button"
                             className="bldr-btn"
                             disabled={busy}
-                            onClick={() => void doPublish()}
+                            onClick={doPublish}
                         >
                             Publish changes
                         </button>
@@ -184,16 +202,7 @@ export function PublishMenu({
                     type="button"
                     className="bldr-btn bldr-btn-quiet"
                     disabled={busy}
-                    onClick={() => {
-                        setBusy(true);
-                        void api
-                            .unpublishForm(formId)
-                            .then(() =>
-                                onPublished({ status: 'unpublished', slug, publishedVersion }),
-                            )
-                            .catch(() => {})
-                            .finally(() => setBusy(false));
-                    }}
+                    onClick={() => unpublishMutation.mutate()}
                 >
                     Close form
                 </button>
@@ -213,12 +222,7 @@ export function PublishMenu({
                         ))}
                     </ul>
                 )}
-                <button
-                    type="button"
-                    className="bldr-btn"
-                    disabled={busy}
-                    onClick={() => void doPublish()}
-                >
+                <button type="button" className="bldr-btn" disabled={busy} onClick={doPublish}>
                     Republish
                 </button>
             </>
@@ -235,12 +239,7 @@ export function PublishMenu({
                         ))}
                     </ul>
                 )}
-                <button
-                    type="button"
-                    className="bldr-btn"
-                    disabled={busy}
-                    onClick={() => void doPublish()}
-                >
+                <button type="button" className="bldr-btn" disabled={busy} onClick={doPublish}>
                     {busy ? 'Publishing…' : 'Publish'}
                 </button>
             </>

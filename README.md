@@ -39,11 +39,35 @@ they answered, so the inbox always renders a response against exactly the questi
 
 The original editor needed a 12-operation optimistic mutation engine because many actors
 edited normalized tables through a query cache. Sundew is single-owner, single-document, so
-the client holds canonical state in **one reducer** (`src/app/builder/state/`) with
+the client holds canonical state in **one pure reducer** (`src/app/builder/state/`) with
 structural sharing, and persistence is a **whole-document PUT** with an `If-Match` revision
 header. A conflicting write (another tab) surfaces as an honest 409 instead of a partial
 desync. Undo/redo falls out of the reducer for free: history is an array of previous
 document references, with text edits coalesced into human-sized steps.
+
+The reducer is hosted in a **Zustand store created per builder session**, provided through
+context and read through selectors. Per-session is the point: the claim flow remounts the
+builder from a guest `local-*` id onto a fresh server id, and a module-level store would
+leak one form's history into the next. Zustand contributes subscription plumbing;
+`dispatch` is the only way state changes, so the reducer stays testable with no store in
+sight.
+
+### Server state is a cache, so it lives in one
+
+Everything that comes back from the API — session (`['me']`), the workspace list
+(`['forms']`), form details, submissions, version snapshots — sits in a **TanStack Query**
+cache keyed by resource. Mutations invalidate exactly the keys they touch; deleting a form
+from the workspace is optimistic, removing the row immediately and rolling back to the
+snapshot if the server says no. The best part falls out of publishing being append-only:
+a published snapshot (`/versions/:v`) can never change, so those queries run with
+`staleTime: Infinity` and each version is fetched once per session, ever. The inbox
+renders every response against the exact form version it answered, from cache.
+
+One boundary keeps the layers honest: **TanStack Query owns request/response server
+state; the autosave machine owns the long-lived document write pipeline** (debounced
+`If-Match` PUT, 409 conflict handling, offline, keepalive flush). Autosave is deliberately
+not a mutation — a write pipeline with that many meaningful states is a state machine, and
+hiding it inside a query cache would bury exactly the states the save pill exists to show.
 
 ### Visibility rules are data on the questions they reveal
 
@@ -77,8 +101,10 @@ every live form has an owner and abuse has an address.
 
 ### Bundle discipline
 
-No component library, no query cache, no CSS framework. Six runtime dependencies: `react`,
-`react-dom`, `zod`, `@dnd-kit/*`, `wouter`. The fill page is a separate chunk that never
+No component library, no CSS framework, no router bigger than the routing. The client
+runtime dependencies are `react`, `react-dom`, `zod`, `@dnd-kit/*`, `wouter`,
+`@tanstack/react-query`, and `zustand` — each earning its ~KBs against a hard gzip budget
+enforced at build time (`npm run check:size`). The fill page is a separate chunk that never
 loads drag-and-drop or builder code. Styling is hand-rolled on the design tokens of
 [the site it lives on](https://dietergrosswiler.com).
 

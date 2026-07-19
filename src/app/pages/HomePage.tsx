@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FormStatus, FormSummary } from '@shared/api';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { api } from '@app/api/client';
-import { useResource } from '@app/api/useResource';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import {
@@ -33,7 +33,9 @@ function localIdFromKey(key: string): string {
 
 function StatusDot({ status }: { status: FormStatus }) {
     const live = status === 'published';
-    return <span className={live ? 'status-dot status-dot-live' : 'status-dot'} aria-hidden="true" />;
+    return (
+        <span className={live ? 'status-dot status-dot-live' : 'status-dot'} aria-hidden="true" />
+    );
 }
 
 function WorkspaceHeader() {
@@ -85,31 +87,53 @@ function GuestWorkspace({ localKeys, onNewForm }: { localKeys: string[]; onNewFo
 function SignedInWorkspace({ userLabel }: { userLabel: string }) {
     const [, navigate] = useLocation();
     const { refresh } = useSession();
+    const queryClient = useQueryClient();
     const [localKeys, setLocalKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
     const [claiming, setClaiming] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
-    const forms = useResource<FormSummary[]>(() => api.listForms(), []);
+    const forms = useQuery({ queryKey: ['forms'], queryFn: api.listForms });
 
-    const newForm = async () => {
-        setActionError(null);
-        try {
-            const created = await api.createForm();
+    const createMutation = useMutation({
+        mutationFn: () => api.createForm(),
+        onSuccess: (created) => {
+            void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
             navigate(`/edit/${created.id}`);
-        } catch {
-            setActionError('could not create the form · try again');
-        }
+        },
+        onError: () => setActionError('could not create the form · try again'),
+    });
+
+    // Optimistic removal: the row disappears on click; a failed DELETE rolls
+    // the snapshot back and surfaces the error. Either way the list is
+    // re-validated against the server once the mutation settles.
+    const deleteMutation = useMutation({
+        mutationFn: (form: FormSummary) => api.deleteForm(form.id),
+        onMutate: async (form) => {
+            await queryClient.cancelQueries({ queryKey: ['forms'], exact: true });
+            const previous = queryClient.getQueryData<FormSummary[]>(['forms']);
+            queryClient.setQueryData<FormSummary[]>(['forms'], (old) =>
+                old?.filter((f) => f.id !== form.id),
+            );
+            return { previous };
+        },
+        onError: (_error, _form, context) => {
+            if (context?.previous !== undefined) {
+                queryClient.setQueryData(['forms'], context.previous);
+            }
+            setActionError('could not delete the form · try again');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: ['forms'], exact: true }),
+    });
+
+    const newForm = () => {
+        setActionError(null);
+        createMutation.mutate();
     };
 
-    const deleteForm = async (form: FormSummary) => {
+    const deleteForm = (form: FormSummary) => {
         const title = form.title.trim() || 'Untitled form';
         if (!window.confirm(`Delete "${title}" and all of its responses?`)) return;
         setActionError(null);
-        try {
-            await api.deleteForm(form.id);
-            forms.reload();
-        } catch {
-            setActionError('could not delete the form · try again');
-        }
+        deleteMutation.mutate(form);
     };
 
     const claimLocalDocs = async () => {
@@ -121,7 +145,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 if (doc) await api.createForm(doc);
                 deleteLocalDoc(key);
             }
-            forms.reload();
+            await queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
         } catch {
             setActionError('could not save every form · try again');
         } finally {
@@ -138,6 +162,8 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
         }
         await refresh();
     };
+
+    const formList = forms.data;
 
     return (
         <>
@@ -164,20 +190,24 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 </div>
             )}
             {actionError !== null && <p className="mono quiet-notice">{actionError}</p>}
-            {forms.error !== null && (
+            {forms.isError && (
                 <p className="mono quiet-notice">
                     could not load your forms ·{' '}
-                    <button type="button" className="text-button mono" onClick={forms.reload}>
+                    <button
+                        type="button"
+                        className="text-button mono"
+                        onClick={() => void forms.refetch()}
+                    >
                         retry
                     </button>
                 </p>
             )}
-            {forms.data !== null && forms.data.length === 0 && (
+            {formList !== undefined && formList.length === 0 && (
                 <p className="catalog-empty">No forms yet. Start one below.</p>
             )}
-            {forms.data !== null && forms.data.length > 0 && (
+            {formList !== undefined && formList.length > 0 && (
                 <ul className="catalog">
-                    {forms.data.map((form) => (
+                    {formList.map((form) => (
                         <li key={form.id} className="catalog-row">
                             <span className="catalog-status">
                                 <StatusDot status={form.status} />
@@ -190,7 +220,8 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                                     {form.title.trim() ? form.title : 'Untitled form'}
                                 </Link>
                                 <span className="mono catalog-meta">
-                                    R-{form.submissionCount} · updated {relativeTime(form.updatedAt)}
+                                    R-{form.submissionCount} · updated{' '}
+                                    {relativeTime(form.updatedAt)}
                                 </span>
                             </span>
                             <span className="catalog-links">
@@ -202,7 +233,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                                 <button
                                     type="button"
                                     className="text-button mono"
-                                    onClick={() => void deleteForm(form)}
+                                    onClick={() => deleteForm(form)}
                                 >
                                     Delete
                                 </button>
@@ -212,7 +243,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 </ul>
             )}
             <div className="catalog-actions-row">
-                <button type="button" className="ghost-button" onClick={() => void newForm()}>
+                <button type="button" className="ghost-button" onClick={newForm}>
                     New form
                 </button>
             </div>

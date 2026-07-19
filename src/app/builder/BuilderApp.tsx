@@ -1,11 +1,14 @@
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
+import { emptyForm } from '@shared/schema';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { useFillState } from '@app/runtime/useFillState';
 import '@app/styles/builder.css';
-import { useBuilderDoc } from './useBuilderDoc';
+import { guestDocKey, loadLocalDoc } from './autosave/localMirror';
+import { BuilderStoreProvider, createBuilderStore } from './state/useBuilderStore';
+import { isLocalFormId, useBuilderDoc } from './useBuilderDoc';
 import { TopBar } from './TopBar';
 import { PublishMenu } from './PublishMenu';
 import { DemoBanner } from './DemoBanner';
@@ -20,7 +23,9 @@ function BuilderPreview({ doc }: { doc: FormDefinition }) {
         <div className="bldr-preview">
             <p className="bldr-preview-banner mono">Preview · answers here aren't saved</p>
             {doc.title !== '' && <h1 className="bldr-preview-title">{doc.title}</h1>}
-            {doc.description !== undefined && <p className="bldr-preview-desc">{doc.description}</p>}
+            {doc.description !== undefined && (
+                <p className="bldr-preview-desc">{doc.description}</p>
+            )}
             <ErrorSummary errors={fill.summaryErrors} definition={doc} />
             <FormRenderer
                 definition={doc}
@@ -195,10 +200,28 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     );
 }
 
+// One builder store per session, created when the session mounts: a guest doc
+// hydrates from its localStorage mirror, a server doc starts empty until the
+// API hydrate lands. Never module-level — see useBuilderStore.ts.
+function BuilderSession({ formId }: { formId: string }) {
+    const [store] = useState(() =>
+        createBuilderStore(
+            isLocalFormId(formId)
+                ? (loadLocalDoc(guestDocKey(formId)) ?? emptyForm())
+                : emptyForm(),
+        ),
+    );
+    return (
+        <BuilderStoreProvider value={store}>
+            <BuilderSessionApp formId={formId} />
+        </BuilderStoreProvider>
+    );
+}
+
 // Keyed on formId so the claim flow's route replace (local-* -> server id)
-// remounts with fresh reducer + persistence state.
+// remounts with a fresh store + persistence state.
 const BuilderApp: FC<{ formId: string }> = ({ formId }) => (
-    <BuilderSessionApp key={formId} formId={formId} />
+    <BuilderSession key={formId} formId={formId} />
 );
 
 export default BuilderApp;

@@ -1,10 +1,10 @@
 import type { FormEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { FillResponse, SubmitResponse } from '@shared/api';
-import type { AnswerValue } from '@shared/schema';
+import type { Answers, AnswerValue } from '@shared/schema';
 import type { SubmissionError } from '@shared/visibility';
 import { ApiFailure, api } from '@app/api/client';
-import { useResource } from '@app/api/useResource';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
@@ -42,11 +42,29 @@ function DemoBanner({ slug }: { slug: string }) {
 
 function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     const state = useFillState(fill.definition, fillDraftKey(slug));
-    const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState<SubmitResponse | null>(null);
     const [serverErrors, setServerErrors] = useState<SubmissionError[]>([]);
     const [failure, setFailure] = useState<'rateLimited' | 'generic' | null>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
+
+    // Mutations never retry, so a flaky network can't double-submit a response.
+    const submitMutation = useMutation({
+        mutationFn: (answers: Answers) => api.submitFill(slug, answers),
+        onSuccess: (result) => {
+            if (result.ok) {
+                setDone(result);
+                state.reset();
+            } else {
+                setServerErrors(result.errors);
+            }
+        },
+        onError: (error) => {
+            setFailure(
+                error instanceof ApiFailure && error.status === 429 ? 'rateLimited' : 'generic',
+            );
+        },
+    });
+    const submitting = submitMutation.isPending;
 
     useEffect(() => {
         document.title = fill.formTitle;
@@ -73,25 +91,12 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     }
     for (const [questionId, message] of state.errors) mergedErrors.set(questionId, message);
 
-    const handleSubmit = async (event: FormEvent) => {
+    const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
         setFailure(null);
         setServerErrors([]);
         if (!state.validate()) return;
-        setSubmitting(true);
-        try {
-            const result = await api.submitFill(slug, state.answers);
-            if (result.ok) {
-                setDone(result);
-                state.reset();
-            } else {
-                setServerErrors(result.errors);
-            }
-        } catch (err) {
-            setFailure(err instanceof ApiFailure && err.status === 429 ? 'rateLimited' : 'generic');
-        } finally {
-            setSubmitting(false);
-        }
+        submitMutation.mutate(state.answers);
     };
 
     if (done) {
@@ -126,7 +131,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                 <div ref={summaryRef}>
                     <ErrorSummary errors={summaryErrors} definition={fill.definition} />
                 </div>
-                <form noValidate onSubmit={(event) => void handleSubmit(event)}>
+                <form noValidate onSubmit={handleSubmit}>
                     <FormRenderer
                         definition={fill.definition}
                         answers={state.answers}
@@ -144,9 +149,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                             </p>
                         )}
                         {failure === 'generic' && (
-                            <p className="mono quiet-notice">
-                                Something went wrong. Try again.
-                            </p>
+                            <p className="mono quiet-notice">Something went wrong. Try again.</p>
                         )}
                     </div>
                 </form>
@@ -157,16 +160,21 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
 }
 
 export default function FillPage({ slug }: { slug: string }) {
-    const fill = useResource(() => api.getFill(slug), [slug]);
+    // 404 (null) and 410 ({ gone: true }) are data, not errors: they're stable
+    // answers about the slug, so they cache and render without retry churn.
+    const fill = useQuery({
+        queryKey: ['fill', slug],
+        queryFn: () => api.getFill(slug),
+    });
 
-    if (fill.loading) {
+    if (fill.isPending) {
         return (
             <main className="center-page mono">
                 <p>Sundew</p>
             </main>
         );
     }
-    if (fill.error !== null) {
+    if (fill.isError) {
         return (
             <FillShell>
                 <p className="mono">Could not load this form. Refresh to try again.</p>
