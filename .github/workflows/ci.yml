@@ -1,0 +1,32 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npx tsc --noEmit
+            - run: npx vitest run
+            - run: npx vite build
+            # Content check: patterns come from a repo secret so the list itself
+            # never appears in the public repo. Skipped when the secret is unset.
+            - name: Content check
+              if: ${{ github.event_name == 'push' }}
+              env:
+                  BLOCKED_PATTERNS: ${{ secrets.BLOCKED_PATTERNS }}
+              run: |
+                  if [ -n "$BLOCKED_PATTERNS" ]; then
+                      if echo "$BLOCKED_PATTERNS" | grep -riwF -f - --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist .; then
+                          echo "Blocked pattern found"; exit 1
+                      fi
+                  fi
