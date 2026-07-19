@@ -51,6 +51,11 @@ function renderSeededBuilder() {
     return renderWithQueryClient(<BuilderApp formId={FORM_ID} />);
 }
 
+/** Scopes queries to the canvas so navigator rows never match by accident. */
+function canvas() {
+    return within(document.querySelector('.bldr-canvas') as HTMLElement);
+}
+
 beforeEach(() => {
     window.sessionStorage.setItem('sundew:settled', '1');
     window.localStorage.setItem('sundew:demo-dismissed', '1');
@@ -76,7 +81,7 @@ describe('BuilderApp with a guest doc', () => {
         renderSeededBuilder();
         // The title also appears in the fieldset's sr-only legend; either node
         // sits inside the card, so clicking the first is fine.
-        fireEvent.click(screen.getAllByText(/What did you find\?/)[0]!);
+        fireEvent.click(canvas().getAllByText(/What did you find\?/)[0]!);
         expect(screen.getByRole('heading', { name: 'Q-03 · radio' })).toBeInTheDocument();
     });
 
@@ -88,6 +93,19 @@ describe('BuilderApp with a guest doc', () => {
         const title = screen.getByRole('textbox', { name: 'Question title' });
         expect(title).toHaveFocus();
         expect(screen.getByRole('heading', { name: 'Q-04 · short text' })).toBeInTheDocument();
+    });
+
+    it('opens the description slot in place when selecting a description-less question', () => {
+        renderSeededBuilder();
+        // Q-02 (Date observed) has no description; selecting it must open the
+        // permanent slot rather than mounting a new editor block.
+        fireEvent.click(canvas().getAllByText(/Date observed/)[0]!);
+        const card = document.querySelector('.bldr-qcard.is-selected');
+        expect(card).not.toBeNull();
+        expect(card!.querySelector('.bldr-qdesc-slot')).toHaveClass('is-open');
+        const desc = screen.getByRole('textbox', { name: 'Question description' });
+        fireEvent.change(desc, { target: { value: 'When you saw it' } });
+        expect(desc).toHaveValue('When you saw it');
     });
 
     it('marks conditional sections dormant with a human-readable hint', () => {
@@ -107,6 +125,27 @@ describe('BuilderApp with a guest doc', () => {
             'Q-03 · What did you find?',
         ]);
         expect(within(source).queryByRole('option', { name: /Trap type/ })).toBeNull();
+    });
+
+    it('resets to the demo form from the Form menu only after confirm', () => {
+        renderSeededBuilder();
+        const titleInput = () => screen.getByRole('textbox', { name: 'Form title' });
+        fireEvent.change(titleInput(), { target: { value: 'Renamed form' } });
+        expect(titleInput()).toHaveValue('Renamed form');
+
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        fireEvent.click(screen.getByRole('button', { name: 'Form' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
+        expect(confirmSpy).toHaveBeenCalledWith(
+            'Reset this form to the demo form? Everything in it will be replaced.',
+        );
+        expect(titleInput()).toHaveValue('Renamed form');
+
+        confirmSpy.mockReturnValue(true);
+        fireEvent.click(screen.getByRole('button', { name: 'Form' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
+        expect(titleInput()).toHaveValue('Specimen intake');
+        confirmSpy.mockRestore();
     });
 
     it('toggles into the live preview and back to the builder', () => {

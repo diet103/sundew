@@ -392,12 +392,37 @@
     outline: none;
 }
 
+.bldr-smain {
+    display: block;
+    min-width: 0;
+}
+
+/* Same permanent-slot pattern as the question description: the input's
+   vertical padding lives inside the slot so spacing animates with it. */
+.bldr-sdesc-slot {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bldr-sdesc-slot.is-open {
+    grid-template-rows: 1fr;
+}
+
+.bldr-sdesc-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
 .bldr-sdesc {
+    display: block;
+    width: 100%;
+    min-width: 0;
     background: transparent;
     border: none;
     border-bottom: 1px solid transparent;
     border-radius: 0;
-    padding: 0.05em 0;
+    padding: 0.1em 0 0.15em;
     color: var(--gray-200);
     font-size: var(--text-base);
 }
@@ -478,8 +503,6 @@
 }
 
 /* Drag lift: barely-there scale plus the accent hairline; settles on drop. */
-.bldr-qcard.sd-dragging,
-.bldr-scard.sd-dragging,
 .bldr-optrow.sd-dragging {
     opacity: 0.92;
     scale: 1.01;
@@ -510,46 +533,101 @@
     min-width: 0;
 }
 
-.bldr-qbody.is-headless .sd-label {
+/* Scoped to the builder card body only: the Preview keeps its labels. */
+.bldr-qbody .sd-label {
     display: none;
 }
 
-.bldr-qedit {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+/* Title and description live in permanent slots so selecting a card never
+   changes its height: one class covers the static div and the input with
+   identical metrics (single line, clipped with an ellipsis, so long text
+   cannot wrap the div variant taller than the input), and the description
+   slot animates 0fr -> 1fr. */
+.bldr-qmain {
+    display: block;
+    min-width: 0;
 }
 
-.bldr-inline-title {
-    font-size: var(--text-md);
+.bldr-qtitle-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35em;
+}
+
+.bldr-qtitle {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    font: inherit;
     font-weight: 600;
+    font-size: var(--text-base);
+    line-height: inherit;
     color: var(--gray-0);
     background: transparent;
     border: none;
-    border-bottom: 1px dashed var(--rule);
+    border-bottom: 1px dashed transparent;
     border-radius: 0;
-    padding: 0.1em 0;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.bldr-inline-title:focus {
+.bldr-qtitle-empty {
+    color: var(--muted);
+}
+
+input.bldr-qtitle {
+    border-bottom-color: var(--rule);
+}
+
+input.bldr-qtitle:focus {
     border-bottom-color: var(--accent-regular);
     outline: none;
 }
 
-.bldr-inline-desc {
+.bldr-qdesc-slot {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bldr-qdesc-slot.is-open {
+    grid-template-rows: 1fr;
+}
+
+.bldr-qdesc-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.bldr-qdesc {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    font: inherit;
     font-size: var(--text-base);
+    line-height: inherit;
     color: var(--muted);
     background: transparent;
     border: none;
     border-bottom: 1px dashed transparent;
     border-radius: 0;
-    padding: 0.05em 0;
+    padding: 0.05em 0 0.15em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.bldr-inline-desc:hover,
-.bldr-inline-desc:focus {
+input.bldr-qdesc:hover,
+input.bldr-qdesc:focus {
     border-bottom-color: var(--rule);
     outline: none;
+}
+
+.bldr-qmain .bldr-qbody {
+    margin-top: 0.45rem;
 }
 
 .bldr-tag {
@@ -567,18 +645,6 @@
 }
 
 /* Canvas copies of the runtime form controls: keep them compact and calm. */
-.bldr-canvas .sd-label {
-    display: block;
-    font-weight: 600;
-    color: var(--gray-0);
-}
-
-.bldr-canvas .sd-question-desc {
-    color: var(--muted);
-    font-size: var(--text-base);
-    margin-bottom: 0.3rem;
-}
-
 .bldr-canvas .sd-options,
 .bldr-canvas fieldset {
     border: none;
@@ -615,10 +681,6 @@
     pointer-events: none;
     overflow: visible;
     transition: opacity 150ms ease;
-}
-
-.bldr-threads.is-hidden {
-    opacity: 0;
 }
 
 .bldr-thread .bldr-thread-line {
@@ -784,6 +846,171 @@
     background-color: var(--accent-overlay);
 }
 
+/* ---- Form menu (document-level actions in the top bar) --------------------- */
+
+.bldr-formmenu {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bldr-menu-right {
+    left: auto;
+    right: 0;
+}
+
+/* ---- Section list navigator ----------------------------------------------- */
+
+.bldr-nav {
+    width: 240px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--rule);
+    position: sticky;
+    top: 3.05rem;
+    align-self: flex-start;
+    max-height: calc(100dvh - 3.05rem);
+    overflow-y: auto;
+    padding: 0.8rem 0.6rem 2rem;
+}
+
+.bldr-nav.is-closed {
+    width: auto;
+    padding: 0.6rem 0.35rem 2rem;
+}
+
+.bldr-nav-head {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+}
+
+.bldr-nav-reorder {
+    margin-right: auto;
+    font-size: var(--text-sm);
+}
+
+.bldr-nav-chip {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    padding: 0.1em 0.5em;
+    margin-bottom: 0.6rem;
+}
+
+.bldr-nav-list,
+.bldr-nav-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.bldr-nav-sublist {
+    padding-left: 1.05rem;
+}
+
+.bldr-nav-item.is-dragging {
+    opacity: 0.92;
+    position: relative;
+    z-index: 10;
+}
+
+/* The in-list original of an overlay-chip question drag. */
+.bldr-nav-qitem.is-dragging {
+    opacity: 0.4;
+}
+
+.bldr-nav-rowline {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.bldr-nav-row {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4em;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0.28em 0.45em;
+    color: var(--gray-200);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease;
+}
+
+.bldr-nav-row:hover {
+    background-color: var(--accent-subtle-overlay);
+}
+
+.bldr-nav-row.is-selected {
+    color: var(--accent-regular);
+}
+
+.bldr-nav-srow.is-current {
+    box-shadow: inset 2px 0 0 var(--rule);
+}
+
+.bldr-nav-qrow {
+    font-size: var(--text-sm);
+}
+
+.bldr-nav-num {
+    flex-shrink: 0;
+    color: var(--gray-400);
+    font-size: var(--text-sm);
+}
+
+.bldr-nav-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bldr-nav-label.is-empty {
+    color: var(--muted);
+}
+
+.bldr-nav-flag {
+    flex-shrink: 0;
+    color: var(--gray-0);
+}
+
+.bldr-nav-dragchip {
+    background-color: var(--sd-card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.3em 0.6em;
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+/* Navigator jump landing: one quiet pulse on the target card. The global
+   reduced-motion clamp collapses it to a no-op. */
+.bldr-qcard.is-flashed {
+    animation: bldr-flash 800ms ease-out both;
+}
+
+@keyframes bldr-flash {
+    from {
+        background-color: var(--accent-overlay);
+    }
+}
+
 /* ---- Inspector ------------------------------------------------------------ */
 
 .bldr-inspector {
@@ -876,23 +1103,42 @@
     font-size: var(--text-sm);
 }
 
+.bldr-options-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.bldr-options-editor > .bldr-btn {
+    align-self: flex-start;
+    margin-top: 0.1rem;
+}
+
 .bldr-optlist {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.4rem;
 }
 
 .bldr-optrow {
+    border: 1px solid transparent;
     border-radius: 4px;
+    padding: 0.3rem 0.4rem;
+    min-height: 2.1rem;
+    transition: border-color 150ms ease;
+}
+
+.bldr-optrow:hover {
+    border-color: var(--rule);
 }
 
 .bldr-optrow-main {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
 }
 
 /* Fixed-width handles so every row's input starts on the same column. */
@@ -913,7 +1159,7 @@
 /* "reveals N questions" microcopy: quiet, tucked under the option input. */
 .bldr-optrow .bldr-hint {
     color: var(--gray-400);
-    margin-left: calc(1.4rem + 0.3rem);
+    margin-left: calc(1.4rem + 0.4rem);
     margin-top: 0.1rem;
 }
 
@@ -1049,6 +1295,10 @@
     }
 
     .bldr-account-name {
+        display: none;
+    }
+
+    .bldr-nav {
         display: none;
     }
 

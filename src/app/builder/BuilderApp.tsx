@@ -15,6 +15,8 @@ import { DemoBanner } from './DemoBanner';
 import { Canvas } from './canvas/Canvas';
 import { CardRegistryProvider } from './canvas/ThreadOverlay';
 import { Inspector } from './inspector/Inspector';
+import { NavStoreProvider, createNavStore } from './navigator/navStore';
+import { SectionListPanel } from './navigator/SectionListPanel';
 
 function BuilderPreview({ doc }: { doc: FormDefinition }) {
     const fill = useFillState(doc);
@@ -143,6 +145,8 @@ function BuilderSessionApp({ formId }: { formId: string }) {
         <CardRegistryProvider>
             <div className={settling ? 'bldr bldr-settling-root' : 'bldr'}>
                 <TopBar
+                    formId={formId}
+                    isLocal={b.isLocal}
                     title={b.doc.title}
                     dispatch={b.dispatch}
                     canUndo={b.canUndo}
@@ -160,6 +164,14 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                     publishMenu={publishMenu}
                 />
                 <div className="bldr-main">
+                    {!preview && (
+                        <SectionListPanel
+                            doc={b.doc}
+                            dispatch={b.dispatch}
+                            selection={b.selection}
+                            onSelect={b.select}
+                        />
+                    )}
                     <div className="bldr-canvas-col">
                         {b.isLocal && !preview && <DemoBanner />}
                         {preview ? (
@@ -211,9 +223,14 @@ function BuilderSession({ formId }: { formId: string }) {
                 : emptyForm(),
         ),
     );
+    // The navigator panel's UI state remounts with the session too, so
+    // reorder mode and flash highlights never leak across forms.
+    const [navStore] = useState(() => createNavStore());
     return (
         <BuilderStoreProvider value={store}>
-            <BuilderSessionApp formId={formId} />
+            <NavStoreProvider value={navStore}>
+                <BuilderSessionApp formId={formId} />
+            </NavStoreProvider>
         </BuilderStoreProvider>
     );
 }

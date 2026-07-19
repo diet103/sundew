@@ -49,7 +49,15 @@ function WorkspaceHeader() {
     );
 }
 
-function GuestWorkspace({ localKeys, onNewForm }: { localKeys: string[]; onNewForm: () => void }) {
+function GuestWorkspace({
+    localKeys,
+    onNewForm,
+    onDelete,
+}: {
+    localKeys: string[];
+    onNewForm: () => void;
+    onDelete: (key: string) => void;
+}) {
     return (
         <>
             <ul className="catalog">
@@ -66,6 +74,15 @@ function GuestWorkspace({ localKeys, onNewForm }: { localKeys: string[]; onNewFo
                                     {doc?.title.trim() ? doc.title : 'Untitled form'}
                                 </Link>
                                 <span className="mono catalog-meta">saved in this browser</span>
+                            </span>
+                            <span className="catalog-links">
+                                <button
+                                    type="button"
+                                    className="text-button mono"
+                                    onClick={() => onDelete(key)}
+                                >
+                                    Delete
+                                </button>
                             </span>
                         </li>
                     );
@@ -250,12 +267,16 @@ export function HomePage() {
     const search = useSearch();
     const authError = new URLSearchParams(search).get('authError') === '1';
     const [guestKeys, setGuestKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
+    // The seed-or-resume redirect below runs once; afterwards the guest list
+    // renders even when deletes shrink it to one or zero rows.
+    const [redirectChecked, setRedirectChecked] = useState(false);
 
     // Guests land inside the product, never on a marketing page: no docs means
     // seed one and jump straight into it; one doc means resume it.
     useEffect(() => {
         if (loading || user) return;
         const keys = listLocalDocKeys(GUEST_DOC_PREFIX);
+        setRedirectChecked(true);
         if (keys.length === 0) {
             const localId = `local-${crypto.randomUUID()}`;
             saveLocalDoc(guestDocKey(localId), specimenIntake());
@@ -268,7 +289,7 @@ export function HomePage() {
         }
     }, [loading, user, navigate]);
 
-    if (loading || (!user && guestKeys.length <= 1)) {
+    if (loading || (!user && !redirectChecked && guestKeys.length <= 1)) {
         return (
             <main className="center-page mono">
                 <p>Sundew</p>
@@ -283,6 +304,14 @@ export function HomePage() {
         navigate(`/edit/${localId}`);
     };
 
+    const deleteGuestForm = (key: string) => {
+        const doc = loadLocalDoc(key);
+        const title = doc?.title.trim() ? doc.title : 'Untitled form';
+        if (!window.confirm(`Delete "${title}"? It only exists in this browser.`)) return;
+        deleteLocalDoc(key);
+        setGuestKeys(listLocalDocKeys(GUEST_DOC_PREFIX));
+    };
+
     return (
         <div className="page-shell">
             <main className="page-main">
@@ -293,7 +322,11 @@ export function HomePage() {
                 {user ? (
                     <SignedInWorkspace userLabel={user.name ?? user.email} />
                 ) : (
-                    <GuestWorkspace localKeys={guestKeys} onNewForm={newGuestForm} />
+                    <GuestWorkspace
+                        localKeys={guestKeys}
+                        onNewForm={newGuestForm}
+                        onDelete={deleteGuestForm}
+                    />
                 )}
             </main>
             <AppFooter />

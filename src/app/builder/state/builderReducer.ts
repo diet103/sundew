@@ -249,6 +249,10 @@ function applyDocAction(state: BuilderState, action: DocAction): BuilderState {
             };
             return commitDoc(state, replaceQuestion(doc, found.section, next), 'Delete option');
         }
+        case 'RESET_DOC': {
+            // One undoable commit; selection clears because every id changes.
+            return commitDoc(state, action.doc, 'Reset form', { selection: null });
+        }
         case 'SET_VISIBILITY': {
             const vis = action.visibility ?? undefined;
             if (action.targetKind === 'section') {

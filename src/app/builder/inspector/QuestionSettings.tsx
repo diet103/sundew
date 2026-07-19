@@ -9,7 +9,7 @@ import {
     updateQuestion,
 } from '../state/actions';
 import type { Selection } from '../state/types';
-import { moveQuestionAction } from '../dnd/sortable';
+import { moveQuestionAction } from '../state/reorder';
 import { QUESTION_TYPE_LABELS } from '../canvas/AddQuestionMenu';
 import { LogicEditor } from './LogicEditor';
 import { OptionsEditor } from './OptionsEditor';

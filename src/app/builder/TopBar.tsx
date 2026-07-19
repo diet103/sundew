@@ -7,9 +7,12 @@ import { SundewMark } from '@app/components/SundewMark';
 import type { BuilderAction } from './state/actions';
 import { setFormMeta } from './state/actions';
 import type { BuilderSaveState } from './useBuilderDoc';
+import { FormMenu } from './FormMenu';
 import { SavePill } from './SavePill';
 
 export interface TopBarProps {
+    formId: string;
+    isLocal: boolean;
     title: string;
     dispatch: (action: BuilderAction) => void;
     canUndo: boolean;
@@ -28,6 +31,8 @@ export interface TopBarProps {
 }
 
 export function TopBar({
+    formId,
+    isLocal,
     title,
     dispatch,
     canUndo,
@@ -93,6 +98,7 @@ export function TopBar({
                 >
                     <span aria-hidden="true">↻</span>
                 </button>
+                <FormMenu formId={formId} isLocal={isLocal} title={title} dispatch={dispatch} />
                 <button
                     type="button"
                     className="bldr-btn bldr-btn-quiet"
