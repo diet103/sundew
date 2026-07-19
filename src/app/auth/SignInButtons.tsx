@@ -42,8 +42,11 @@ export function SignInButtons({ returnTo, onBeforeNavigate }: SignInButtonsProps
             setStubBusy(true);
             setStubError(false);
             try {
-                onBeforeNavigate?.();
                 await api.e2eSignIn('dev@localhost', 'Test User');
+                // Only stash the caller's intent once sign-in has succeeded:
+                // a failed attempt must not leave a pending auto-publish
+                // behind for an unrelated later sign-in to consume.
+                onBeforeNavigate?.();
                 // Full navigation on purpose: the reload re-runs the claim
                 // flow and any stored sundew:intent continuation, exactly
                 // like returning from an OAuth redirect.

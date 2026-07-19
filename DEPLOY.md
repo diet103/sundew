@@ -77,4 +77,6 @@ providers only when you want to exercise the actual OAuth flows locally.
 
 Restart the dev server after editing `.dev.vars`. `E2E_AUTH_STUB=1` can stay:
 configured providers win in the UI, and the stub button only shows when no
-provider is configured.
+provider is configured. Note for `npm run e2e`: with real provider ids present,
+`publish-signin.spec.ts` skips itself (the stub button it drives is no longer
+rendered); the rest of the suite is unaffected.

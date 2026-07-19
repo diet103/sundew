@@ -15,10 +15,24 @@ test.describe.configure({ mode: 'serial' });
 test.describe('publish via the stub sign-in button', () => {
     let ownerCtx: BrowserContext;
     let owner: Page;
+    let providerConfigured = false;
 
     test.beforeAll(async ({ browser }) => {
         ownerCtx = await browser.newContext({ baseURL: BASE_URL });
         owner = await ownerCtx.newPage();
+        // A dev following DEPLOY.md's local OAuth section has real client ids
+        // in .dev.vars; the stub button never renders then, so this spec
+        // would fail for the wrong reason. Skip instead.
+        const me = await ownerCtx.request.get('/forms/api/me');
+        const body = (await me.json()) as { auth?: { google: boolean; github: boolean } };
+        providerConfigured = Boolean(body.auth && (body.auth.google || body.auth.github));
+    });
+
+    test.beforeEach(() => {
+        test.skip(
+            providerConfigured,
+            'real OAuth creds are configured in .dev.vars; the stub button is not rendered',
+        );
     });
 
     test.afterAll(async () => {
