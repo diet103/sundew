@@ -1,5 +1,6 @@
 /* Self-hosted fonts (Latin subsets, woff2) — same faces as the Field Notebook
-   site; URLs rewritten for the app's /forms base path. */
+   site; URLs rewritten for the app's /forms base path. All three faces are
+   SIL OFL 1.1; notices and license text in public/fonts/OFL.txt. */
 @font-face {
     font-family: 'Fraunces';
     font-style: normal;

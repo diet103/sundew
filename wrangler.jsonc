@@ -33,7 +33,6 @@
         "crons": ["17 4 * * *"]
     },
     "vars": {
-        "APP_ORIGIN": "https://dietergrosswiler.com",
         "GOOGLE_CLIENT_ID": "",
         "GITHUB_CLIENT_ID": ""
     }

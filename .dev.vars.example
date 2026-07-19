@@ -2,8 +2,6 @@
 # Create OAuth apps and paste credentials here; the app runs fine without them
 # (guest mode + local drafts), you just can't sign in or publish.
 
-APP_ORIGIN=http://localhost:5173
-
 # Google OAuth 2.0 client (https://console.cloud.google.com/apis/credentials)
 # Authorized redirect URI: http://localhost:5173/forms/api/auth/google/callback
 GOOGLE_CLIENT_ID=
