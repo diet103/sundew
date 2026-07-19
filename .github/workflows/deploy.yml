@@ -7,6 +7,9 @@ on:
 
 concurrency: deploy
 
+permissions:
+    contents: read
+
 jobs:
     deploy:
         runs-on: ubuntu-latest

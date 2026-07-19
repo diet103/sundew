@@ -3,7 +3,7 @@
 A guest-first form builder where the form is one JSON document.
 
 **Try it:** clone and `npm install && npm run dev` · no sign-up, the builder is the
-landing page. (A hosted demo lands at dietergrosswiler.com/forms with the first deploy.)
+landing page. (Hosted demo coming soon at dietergrosswiler.com/forms.)
 
 Drag questions into place, wire answer choices to reveal later questions, watch the save
 readout tick while you work. Sign in with one click when you want to keep it, publish to a
@@ -147,6 +147,7 @@ into your `.dev.vars`).
 You need a free Cloudflare account and `npx wrangler login`.
 
 ```bash
+npm install                      # if you haven't already
 npx wrangler d1 create sundew    # paste the database_id into wrangler.jsonc
 npm run db:migrate:remote
 npm run deploy                   # builds, checks bundle budgets, deploys
@@ -179,7 +180,8 @@ a commented-out `routes` block for serving under your own domain. Secrets go thr
 
 **Restyling is one file.** Every color, shadow, and type token sits in
 `src/app/styles/tokens.css` — a light `:root` block, a dark `:root.theme-dark` block,
-and semantic `--sd-*` aliases the components consume. No other file hardcodes a color.
+and semantic `--sd-*` aliases the components consume. No other file hardcodes a color,
+except `public/favicon.svg`, which carries its own copy of the accent.
 Dark is the shipped default via `class="theme-dark"` on the `<html>` element in
 `index.html`; delete the class to go light, or wire a toggle that flips it on
 `document.documentElement` — the palette on the other side is already built. Fonts are
