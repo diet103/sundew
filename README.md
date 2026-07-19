@@ -2,12 +2,17 @@
 
 A guest-first form builder where the form is one JSON document.
 
-**Try it:** [dietergrosswiler.com/forms](https://dietergrosswiler.com/forms) · no sign-up, the builder is the landing page.
+**Try it:** clone and `npm install && npm run dev` · no sign-up, the builder is the
+landing page. (A hosted demo lands at dietergrosswiler.com/forms with the first deploy.)
 
 Drag questions into place, wire answer choices to reveal later questions, watch the save
 readout tick while you work. Sign in with one click when you want to keep it, publish to a
 share link, and responses arrive in your inbox. MIT licensed, one repo, everything you see
 running is in here.
+
+![The builder: canvas as live preview, section navigator with reveal threads, logic editor in the inspector](docs/builder.png)
+
+![A published form on its share link: outline rail, conditional sections revealed as you answer](docs/fill.png)
 
 ## Why this exists
 
@@ -117,6 +122,8 @@ and runs a daily cleanup cron.
 
 ## Running locally
 
+Prerequisite: Node 22.12+. Everything else, wrangler included, arrives with `npm install`.
+
 ```bash
 npm install
 cp .dev.vars.example .dev.vars   # OAuth creds optional; guest mode works without
@@ -124,18 +131,75 @@ npm run db:migrate:local
 npm run dev                      # real workerd + local D1 via @cloudflare/vite-plugin
 ```
 
+To exercise sign-in and publishing without creating OAuth apps, set `E2E_AUTH_STUB=1` in
+`.dev.vars` and restart: the sign-in menu grows a "Continue as test user (dev)" button
+that signs in a local account, so publish → share link → fill → inbox is fully testable
+offline. Real local OAuth, if you want it, is walked through in
+[DEPLOY.md](DEPLOY.md#local-oauth-optional).
+
 Tests: `npm test` (reducer, visibility evaluator, autosave machine, renderer, worker
-helpers) · `npm run e2e` (Playwright golden path against the local worker).
+helpers) · `npm run e2e` (Playwright golden path against the local worker; run
+`npx playwright install chromium` once first — and note e2e writes `E2E_AUTH_STUB=1`
+into your `.dev.vars`).
 
 ## Deploy your own
 
+You need a free Cloudflare account and `npx wrangler login`.
+
 ```bash
-wrangler d1 create sundew        # paste the id into wrangler.jsonc
+npx wrangler d1 create sundew    # paste the database_id into wrangler.jsonc
 npm run db:migrate:remote
-wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put GITHUB_CLIENT_SECRET
-npm run deploy
+npm run deploy                   # builds, checks bundle budgets, deploys
 ```
+
+That alone is a working guest-mode instance at
+`https://sundew.<your-subdomain>.workers.dev/forms/`. Sign-in and publishing need OAuth
+apps — without them the app still runs, and the sign-in menu says so honestly:
+
+1. Create a Google OAuth client ([console.cloud.google.com](https://console.cloud.google.com/apis/credentials),
+   type Web application) and/or a GitHub OAuth app
+   ([github.com/settings/developers](https://github.com/settings/developers)). Redirect /
+   callback URL:
+   `https://sundew.<your-subdomain>.workers.dev/forms/api/auth/<google|github>/callback`.
+2. Put the client ids in `wrangler.jsonc` under `vars.GOOGLE_CLIENT_ID` /
+   `vars.GITHUB_CLIENT_ID` — they ship empty, and an empty id simply hides that
+   provider's button.
+3. `npx wrangler secret put GOOGLE_CLIENT_SECRET` and/or `GITHUB_CLIENT_SECRET`.
+4. `npm run deploy` again.
+
+Either provider alone is enough. [DEPLOY.md](DEPLOY.md) is the fuller runbook: CI
+deploys, GitHub Actions secrets, custom-domain cutover.
+
+## Configuration, theming, rebranding
+
+**Deployment knobs** live in `wrangler.jsonc`: the worker `name`, the D1 binding
+(`database_name` / `database_id`), the daily cleanup cron, the OAuth client-id vars, and
+a commented-out `routes` block for serving under your own domain. Secrets go through
+`wrangler secret put`; their local equivalents live in `.dev.vars`.
+
+**Restyling is one file.** Every color, shadow, and type token sits in
+`src/app/styles/tokens.css` — a light `:root` block, a dark `:root.theme-dark` block,
+and semantic `--sd-*` aliases the components consume. No other file hardcodes a color.
+Dark is the shipped default via `class="theme-dark"` on the `<html>` element in
+`index.html`; delete the class to go light, or wire a toggle that flips it on
+`document.documentElement` — the palette on the other side is already built. Fonts are
+self-hosted OFL subsets in `public/fonts/` + `src/app/styles/fonts.css` (mind the
+Newsreader metric overrides there if you swap faces).
+
+**Renaming it** touches: `BASE_TITLE` in `src/app/router.tsx`, the title and meta
+description in `index.html`, the wordmark in the top bar and footer copy, the seed demo
+form in `shared/seed.ts`, the report-abuse contact in `src/app/pages/FillPage.tsx`, and
+`public/favicon.svg`. The `sundew:` localStorage prefixes and `sund_*` cookie names can
+stay — renaming those just signs users out and orphans guest drafts.
+
+**The `/forms/` base path is load-bearing.** It is deliberately a constant, not a
+config value: it appears in `vite.config.ts` (`base`), the wouter router base, the API
+client, the worker route table and cookie paths, the OAuth `returnTo` sanitizer,
+`fonts.css` URLs, `scripts/postbuild.mjs`'s asset layout and `_headers` rules, and
+`wrangler.jsonc`'s `run_worker_first` globs. To mount the app anywhere else,
+`grep -rn '/forms'` across `src/`, `scripts/`, `e2e/`, `index.html`, `vite.config.ts`,
+and `wrangler.jsonc` and change every hit — the cookie `Path` and the `returnTo`
+sanitizer are the two that break sign-in silently if missed.
 
 ## Roadmap
 
@@ -145,4 +209,6 @@ npm run deploy
 
 ## License
 
-MIT · built by [Dieter Grosswiler](https://dietergrosswiler.com)
+MIT · built by [Dieter Grosswiler](https://dietergrosswiler.com). The bundled font
+subsets (Fraunces, Newsreader, Spline Sans Mono) are SIL OFL 1.1 — see
+[public/fonts/OFL.txt](public/fonts/OFL.txt).

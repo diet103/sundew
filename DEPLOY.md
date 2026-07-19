@@ -35,6 +35,17 @@ sundew.dietergrosswiler.workers.dev and the eventual dietergrosswiler.com/forms 
 - `BLOCKED_PATTERNS` (optional, newline-separated) — enables the content check
   without the pattern list ever appearing in the public repo.
 
+The deploy workflow skips itself (green, near-zero cost) until
+`CLOUDFLARE_API_TOKEN` exists, so the repo can go public before the first
+deploy without a red Actions tab.
+
+## At repo-publish time (GitHub settings)
+
+- Repo description + topics (form-builder, cloudflare-workers, d1, react, hono).
+- Security → enable private vulnerability reporting (SECURITY.md points there).
+- Actions secrets per the section above (all optional at first).
+- Optional: branch protection on `main` requiring the CI checks.
+
 ## Cutover to dietergrosswiler.com/forms
 
 Prerequisite: dietergrosswiler.com attached to the resume-website worker.
@@ -45,7 +56,6 @@ Prerequisite: dietergrosswiler.com attached to the resume-website worker.
    (see the TODO there), rebuild, redeploy, re-run the anonymization grep.
 3. Add the apex redirect URI to the Google client; repoint the prod GitHub app.
 4. Re-verify security headers on both workers and `noindex` on share pages.
-5. `APP_ORIGIN` in wrangler.jsonc already points at the apex; nothing to change.
 
 ## Local OAuth (optional)
 
