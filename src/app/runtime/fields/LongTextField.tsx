@@ -1,3 +1,4 @@
+import { LIMITS } from '@shared/limits';
 import type { Question } from '@shared/schema';
 import type { FieldControlProps } from '../QuestionField';
 
@@ -13,9 +14,12 @@ export function LongTextField({
     disabled,
 }: FieldControlProps<LongTextQuestion, string>) {
     const text = value ?? '';
-    const max = question.maxLength;
-    // The counter only appears once the writer is within 20% of the cap.
-    const showCounter = max !== undefined && max - text.length <= max * 0.2;
+    // The store rejects answers over LIMITS.answerChars, so the field must
+    // never let one form: the schema cap applies even without an author cap.
+    const max = question.maxLength ?? LIMITS.answerChars;
+    // The counter only appears once the writer is within 20% of the author's
+    // configured cap; the schema-level ceiling stays silent.
+    const showCounter = question.maxLength !== undefined && max - text.length <= max * 0.2;
     return (
         <>
             <textarea

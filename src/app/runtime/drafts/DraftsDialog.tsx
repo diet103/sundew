@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { KeyboardEvent, MutableRefObject, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
 import { findQuestion, hasOptions } from '@shared/schema';
@@ -36,13 +36,20 @@ function displayTitle(draft: FillDraft): string {
 function ModalShell({
     label,
     onClose,
+    shellRef,
     children,
 }: {
     label: string;
     onClose: () => void;
+    /** Optional handle on the dialog container, for callers that need to restore focus into it. */
+    shellRef?: MutableRefObject<HTMLDivElement | null>;
     children: ReactNode;
 }) {
     const ref = useRef<HTMLDivElement>(null);
+    const setRef = (node: HTMLDivElement | null) => {
+        ref.current = node;
+        if (shellRef !== undefined) shellRef.current = node;
+    };
 
     useEffect(() => {
         const root = ref.current;
@@ -66,10 +73,15 @@ function ModalShell({
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
         if (first === undefined || last === undefined) return;
-        if (event.shiftKey && document.activeElement === first) {
+        // The container itself (tabIndex=-1) can hold focus, e.g. right after
+        // open; treat anything not in the tab order as the trap boundary so
+        // the first Tab in either direction stays inside the dialog.
+        const active = document.activeElement;
+        const index = active instanceof HTMLElement ? focusables.indexOf(active) : -1;
+        if (event.shiftKey && index <= 0) {
             event.preventDefault();
             last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
+        } else if (!event.shiftKey && (index === -1 || index === focusables.length - 1)) {
             event.preventDefault();
             first.focus();
         }
@@ -88,7 +100,7 @@ function ModalShell({
                 aria-modal="true"
                 aria-label={label}
                 tabIndex={-1}
-                ref={ref}
+                ref={setRef}
                 onKeyDown={onKeyDown}
             >
                 {children}
@@ -122,6 +134,16 @@ export default function DraftsDialog({
     const [renameValue, setRenameValue] = useState('');
     const [renameError, setRenameError] = useState(false);
     const [confirmId, setConfirmId] = useState<string | null>(null);
+    const shellRef = useRef<HTMLDivElement>(null);
+
+    // Confirming a delete, cancelling one, or finishing a rename unmounts the
+    // control that held focus, which would drop focus behind the aria-modal
+    // dialog. Whenever one of those rows changes, pull a strayed focus back
+    // onto the dialog container so the trap keeps holding.
+    useEffect(() => {
+        const root = shellRef.current;
+        if (root !== null && !root.contains(document.activeElement)) root.focus();
+    }, [renamingId, confirmId, drafts.drafts]);
 
     const toggleSort = (key: SortKey) => {
         if (key === sortKey) {
@@ -243,7 +265,7 @@ export default function DraftsDialog({
     }
 
     return (
-        <ModalShell label="Drafts" onClose={onClose}>
+        <ModalShell label="Drafts" onClose={onClose} shellRef={shellRef}>
             <h2 className="fill-modal-title">Drafts</h2>
             {drafts.drafts.length === 0 ? (
                 <div className="fill-modal-empty">

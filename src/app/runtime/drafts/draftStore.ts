@@ -60,9 +60,23 @@ export interface ReadStoreResult {
 }
 
 /**
+ * A v2 payload whose envelope is intact but whose drafts may be individually
+ * invalid (e.g. an over-long answer written by an older client). Used to
+ * salvage the good drafts instead of discarding the whole store.
+ */
+const zV2Envelope = z.object({
+    v: z.literal(2),
+    drafts: z.array(z.unknown()),
+    activeDraftId: z.string().nullable().catch(null),
+    autoSave: z.boolean().catch(true),
+});
+
+/**
  * Read whatever sits at the fill-draft key:
  * - null -> fresh store
  * - valid v2 payload -> used as-is
+ * - v2 payload with some invalid drafts -> only the invalid drafts drop; the
+ *   rest survive (one corrupt draft must never destroy its siblings)
  * - numeric v > 2 -> fresh store, read-only (see ReadStoreResult.canWrite)
  * - the legacy v1 bare-answers blob -> non-empty answers wrap into a single
  *   active draft (default title, formVersion = currentVersion)
@@ -78,6 +92,21 @@ export function readStore(raw: string | null, now: number, currentVersion: numbe
     }
     const asV2 = zDraftStoreState.safeParse(parsed);
     if (asV2.success) return { store: asV2.data, canWrite: true };
+    const asEnvelope = zV2Envelope.safeParse(parsed);
+    if (asEnvelope.success) {
+        const drafts: FillDraft[] = [];
+        for (const candidate of asEnvelope.data.drafts) {
+            const result = zFillDraft.safeParse(candidate);
+            if (result.success) drafts.push(result.data);
+        }
+        const activeDraftId = drafts.some((d) => d.id === asEnvelope.data.activeDraftId)
+            ? asEnvelope.data.activeDraftId
+            : null;
+        return {
+            store: { v: 2, drafts, activeDraftId, autoSave: asEnvelope.data.autoSave },
+            canWrite: true,
+        };
+    }
     if (
         typeof parsed === 'object' &&
         parsed !== null &&

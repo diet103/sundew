@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LIMITS } from '@shared/limits';
 import type { Answers } from '@shared/schema';
 import { OPT_PLANT, Q_FOUND, specimenIntake } from '@shared/seed';
 import type { DraftStoreState, FillDraft } from './draftStore';
@@ -67,6 +68,29 @@ describe('readStore migration', () => {
         const result = readStore(JSON.stringify({ v: 3, future: true }), NOW, 1);
         expect(result.store).toEqual(freshStore());
         expect(result.canWrite).toBe(false);
+    });
+
+    it('salvages the valid drafts when one draft in a v2 payload is corrupt', () => {
+        const good = draft({ title: 'good', answers: { [Q_FOUND]: OPT_PLANT } });
+        const bad = draft({
+            title: 'bad',
+            answers: { [Q_FOUND]: 'x'.repeat(LIMITS.answerChars + 1) },
+        });
+        const result = readStore(JSON.stringify(storeWith([good, bad], bad.id)), NOW, 1);
+        expect(result.canWrite).toBe(true);
+        expect(result.store.drafts).toEqual([good]);
+        // The active pointer referenced the dropped draft; nothing is active.
+        expect(result.store.activeDraftId).toBeNull();
+        expect(result.store.autoSave).toBe(true);
+    });
+
+    it('keeps the active pointer when the active draft survives salvage', () => {
+        const good = draft({ title: 'good', answers: { [Q_FOUND]: OPT_PLANT } });
+        const bad = draft({ title: 'bad', createdAt: Number.NaN });
+        const result = readStore(JSON.stringify(storeWith([bad, good], good.id)), NOW, 1);
+        expect(result.canWrite).toBe(true);
+        expect(result.store.drafts).toEqual([good]);
+        expect(result.store.activeDraftId).toBe(good.id);
     });
 });
 

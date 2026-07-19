@@ -43,6 +43,7 @@ function Harness() {
     }, [onChange, state.answers]);
     return (
         <div>
+            <span data-testid="restored">{String(drafts.ready.restored)}</span>
             <DraftsMenu
                 drafts={drafts}
                 definition={definition}
@@ -81,8 +82,8 @@ function seedDraft(title: string, at: number): FillDraft {
     };
 }
 
-function seedStore(drafts: FillDraft[]): void {
-    const state: DraftStoreState = { v: 2, drafts, activeDraftId: null, autoSave: true };
+function seedStore(drafts: FillDraft[], activeDraftId: string | null = null): void {
+    const state: DraftStoreState = { v: 2, drafts, activeDraftId, autoSave: true };
     window.localStorage.setItem(KEY, JSON.stringify(state));
 }
 
@@ -108,6 +109,27 @@ describe('DraftsMenu save', () => {
         expect(stored?.activeDraftId).toBe(stored?.drafts[0]?.id);
         // The inline label reflects the save.
         expect(screen.getByText(/· saved \d{2}:\d{2}:\d{2}/)).toBeInTheDocument();
+    });
+});
+
+describe('draft restore', () => {
+    it('rehydrates the active draft into the rendered form on mount', () => {
+        const saved = seedDraft('field notes', 4_000);
+        seedStore([saved], saved.id);
+        render(<Harness />);
+
+        // The stored answer is re-checked in the form and the restored flag fires.
+        expect(screen.getByRole('radio', { name: 'A plant' })).toBeChecked();
+        expect(screen.getByTestId('restored')).toHaveTextContent('true');
+        // The status line names the restored draft.
+        expect(screen.getByText(/field notes · saved/)).toBeInTheDocument();
+    });
+
+    it('does not restore when no draft is active', () => {
+        seedStore([seedDraft('parked', 4_000)]);
+        render(<Harness />);
+        expect(screen.getByRole('radio', { name: 'A plant' })).not.toBeChecked();
+        expect(screen.getByTestId('restored')).toHaveTextContent('false');
     });
 });
 

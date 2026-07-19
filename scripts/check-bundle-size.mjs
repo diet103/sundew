@@ -10,6 +10,9 @@ const BUDGETS = [
     { pattern: /^index-.*\.js$/, label: 'entry', maxGzip: 100_000 },
     { pattern: /^BuilderApp-.*\.js$/, label: 'builder chunk', maxGzip: 45_000 },
     { pattern: /^FillPage-.*\.js$/, label: 'fill chunk', maxGzip: 10_000 },
+    // draftStore loads eagerly with the fill page (static import from
+    // useDrafts), so its budget is part of the fill route's eager JS.
+    { pattern: /^draftStore-.*\.js$/, label: 'draft store', maxGzip: 5_000 },
     { pattern: /^DraftsDialog-.*\.js$/, label: 'drafts dialog', maxGzip: 10_000 },
 ];
 

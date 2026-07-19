@@ -1,3 +1,4 @@
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { FormDefinition } from '@shared/schema';
 import type { UseDraftsResult } from './useDrafts';
@@ -32,15 +33,45 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
     const [dialog, setDialog] = useState<'drafts' | 'saveAs' | null>(null);
     const barRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!open) return;
+        // The menu role promises the menu keyboard pattern: focus moves into
+        // the menu on open (and back to the trigger on close, see closeMenu).
+        menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]')?.focus();
         const onPointerDown = (event: PointerEvent) => {
             if (!barRef.current?.contains(event.target as Node)) setOpen(false);
         };
         document.addEventListener('pointerdown', onPointerDown);
         return () => document.removeEventListener('pointerdown', onPointerDown);
     }, [open]);
+
+    // Menu items unmount when the menu closes; without an explicit restore the
+    // browser would drop focus to body.
+    const closeMenu = () => {
+        setOpen(false);
+        buttonRef.current?.focus();
+    };
+
+    const onMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        event.preventDefault();
+        const items = Array.from(
+            menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [],
+        );
+        if (items.length === 0) return;
+        const index =
+            document.activeElement instanceof HTMLElement
+                ? items.indexOf(document.activeElement)
+                : -1;
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
+        const next =
+            index === -1
+                ? items[delta === 1 ? 0 : items.length - 1]
+                : items[(index + delta + items.length) % items.length];
+        next?.focus();
+    };
 
     const closeDialog = () => {
         setDialog(null);
@@ -53,7 +84,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                 className="fill-drafts-bar"
                 ref={barRef}
                 onKeyDown={(event) => {
-                    if (event.key === 'Escape') setOpen(false);
+                    if (event.key === 'Escape' && open) closeMenu();
                 }}
             >
                 <button
@@ -67,13 +98,19 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                     Drafts
                 </button>
                 {open && (
-                    <div className="fill-drafts-menu" role="menu" aria-label="Drafts">
+                    <div
+                        className="fill-drafts-menu"
+                        role="menu"
+                        aria-label="Drafts"
+                        ref={menuRef}
+                        onKeyDown={onMenuKeyDown}
+                    >
                         <button
                             type="button"
                             role="menuitem"
                             className="fill-drafts-item mono"
                             onClick={() => {
-                                setOpen(false);
+                                closeMenu();
                                 drafts.saveNow();
                             }}
                         >
@@ -84,7 +121,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                             role="menuitem"
                             className="fill-drafts-item mono"
                             onClick={() => {
-                                setOpen(false);
+                                closeMenu();
                                 setDialog('saveAs');
                             }}
                         >
@@ -95,7 +132,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                             role="menuitem"
                             className="fill-drafts-item mono"
                             onClick={() => {
-                                setOpen(false);
+                                closeMenu();
                                 setDialog('drafts');
                             }}
                         >
@@ -106,7 +143,7 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                             role="menuitem"
                             className="fill-drafts-item mono"
                             onClick={() => {
-                                setOpen(false);
+                                closeMenu();
                                 onNewDraft();
                             }}
                         >
@@ -138,7 +175,9 @@ export function DraftsMenu({ drafts, definition, onNewDraft, onResume }: DraftsM
                     couldn&apos;t save · browser storage may be full
                 </p>
             )}
-            {!drafts.saveFailed && drafts.full && (
+            {/* With an active draft, autosave still upserts in place at the
+                cap; only the no-active-draft case actually stops saving. */}
+            {!drafts.saveFailed && drafts.full && drafts.activeTitle === null && (
                 <p className="fill-drafts-warn mono">
                     draft storage is full · delete a draft to keep saving
                 </p>

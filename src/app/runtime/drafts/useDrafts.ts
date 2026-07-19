@@ -76,6 +76,20 @@ interface DraftEngine {
     ready: DraftsReady;
     initialSavedAt: number | null;
     setOnWrite: (fn: (ok: boolean) => void) => void;
+    /**
+     * Outcome of the most recent setState as seen by persistence: 'ok' or
+     * 'failed' when a write was attempted, 'none' when it wasn't (read-only
+     * mode). Callers reset it to 'none' right before a setState they need to
+     * observe; the persist middleware writes synchronously, so the result is
+     * available immediately after.
+     */
+    lastWrite: { result: 'ok' | 'failed' | 'none' };
+}
+
+// Read through a call so TS does not keep the pre-setState narrowing: the
+// persist middleware mutates lastWrite synchronously inside setState.
+function writeResult(engine: DraftEngine): 'ok' | 'failed' | 'none' {
+    return engine.lastWrite.result;
 }
 
 export function useDrafts(
@@ -87,6 +101,7 @@ export function useDrafts(
     const [engine] = useState<DraftEngine>(() => {
         const key = fillDraftKey(slug);
         let onWrite: (ok: boolean) => void = () => {};
+        const lastWrite: DraftEngine['lastWrite'] = { result: 'none' };
         const store = createFillDraftStore({
             name: key,
             currentVersion: version,
@@ -109,7 +124,10 @@ export function useDrafts(
                     }
                 },
             },
-            onWriteResult: (ok) => onWrite(ok),
+            onWriteResult: (ok) => {
+                lastWrite.result = ok ? 'ok' : 'failed';
+                onWrite(ok);
+            },
         });
         const state = store.getState();
         const active = state.drafts.find((d) => d.id === state.activeDraftId);
@@ -131,6 +149,7 @@ export function useDrafts(
             setOnWrite: (fn) => {
                 onWrite = fn;
             },
+            lastWrite,
         };
     });
 
@@ -142,10 +161,12 @@ export function useDrafts(
     const [saveFailed, setSaveFailed] = useState(false);
     const [savedAt, setSavedAt] = useState<number | null>(engine.initialSavedAt);
 
+    // The write callback only tracks failure state here; savedAt is bumped at
+    // the call sites that actually persist answers (flushPending, saveAs), so
+    // metadata-only writes (renames, autosave toggles) never claim a save.
     useEffect(() => {
         engine.setOnWrite((ok) => {
             setSaveFailed(!ok);
-            if (ok) setSavedAt(Date.now());
         });
     }, [engine]);
 
@@ -169,14 +190,23 @@ export function useDrafts(
         const serialized = answersSerialization(latest.current);
         if (serialized === lastWritten.current) return;
         const now = Date.now();
+        engine.lastWrite.result = 'none';
         engine.store.setState((s) => upsertActiveAnswers(s, latest.current, version, now));
-        // The upsert refuses when the store is full with no active draft; only
-        // acknowledge the write when the answers actually landed in a draft.
+        // The upsert refuses when the store is full with no active draft, and
+        // persistence can fail (quota, privacy mode); only acknowledge the
+        // write when the answers landed in a draft AND the persisted write did
+        // not fail, so a later Save draft retries instead of hitting the gate.
         const after = engine.store.getState();
         const active = after.drafts.find((d) => d.id === after.activeDraftId);
-        if (active !== undefined && answersSerialization(active.answers) === serialized) {
+        const wrote = writeResult(engine);
+        if (
+            active !== undefined &&
+            answersSerialization(active.answers) === serialized &&
+            wrote !== 'failed'
+        ) {
             lastWritten.current = serialized;
             lastWriteAt.current = now;
+            if (wrote === 'ok') setSavedAt(now);
         }
     }, [clearTimer, engine, version]);
 
@@ -219,14 +249,15 @@ export function useDrafts(
 
     const setAutoSave = useCallback(
         (value: boolean) => {
+            // Turning autosave off must not drop a pending write: flush it
+            // first so the answers land before scheduling stops.
+            if (!value) flushPending();
             engine.store.setState({ autoSave: value });
-            if (value) {
-                if (answersSerialization(latest.current) !== lastWritten.current) schedule();
-            } else {
-                clearTimer();
+            if (value && answersSerialization(latest.current) !== lastWritten.current) {
+                schedule();
             }
         },
-        [clearTimer, engine, schedule],
+        [engine, flushPending, schedule],
     );
 
     const saveNow = useCallback(() => {
@@ -239,9 +270,14 @@ export function useDrafts(
             const result = createDraft(engine.store.getState(), title, latest.current, version, now);
             if (result.ok) {
                 clearTimer();
+                engine.lastWrite.result = 'none';
                 engine.store.setState(result.store);
-                lastWritten.current = answersSerialization(latest.current);
-                lastWriteAt.current = now;
+                const wrote = writeResult(engine);
+                if (wrote !== 'failed') {
+                    lastWritten.current = answersSerialization(latest.current);
+                    lastWriteAt.current = now;
+                    if (wrote === 'ok') setSavedAt(now);
+                }
             }
             return result;
         },
@@ -249,26 +285,32 @@ export function useDrafts(
     );
 
     const newDraft = useCallback(() => {
-        clearTimer();
+        // Un-flushed edits belong to the draft being left behind; land them
+        // there before detaching.
+        flushPending();
         latest.current = {};
         lastWritten.current = answersSerialization({});
         engine.store.setState({ activeDraftId: null });
-    }, [clearTimer, engine]);
+    }, [engine, flushPending]);
 
     const resume = useCallback(
         (id: string): PrunedAnswers | null => {
             const state = engine.store.getState();
             const draft = state.drafts.find((d) => d.id === id);
             if (draft === undefined) return null;
-            const pruned = pruneAnswers(definition, draft.answers);
-            clearTimer();
+            // Same as newDraft: flush pending edits into the draft being left
+            // before switching. Re-read the target afterwards in case it WAS
+            // the active draft and the flush just updated it.
+            flushPending();
+            const flushed = engine.store.getState().drafts.find((d) => d.id === id) ?? draft;
+            const pruned = pruneAnswers(definition, flushed.answers);
             latest.current = pruned.answers;
             lastWritten.current = answersSerialization(pruned.answers);
             engine.store.setState({ activeDraftId: id });
-            setSavedAt(draft.updatedAt);
+            setSavedAt(flushed.updatedAt);
             return pruned;
         },
-        [clearTimer, definition, engine],
+        [definition, engine, flushPending],
     );
 
     const rename = useCallback(
