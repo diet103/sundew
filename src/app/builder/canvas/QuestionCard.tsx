@@ -158,6 +158,23 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
                     <span className="bldr-qactions">
                         <button
                             type="button"
+                            className={
+                                question.required ? 'bldr-qreq mono is-on' : 'bldr-qreq mono'
+                            }
+                            aria-pressed={question.required}
+                            aria-label="Required"
+                            title={question.required ? 'Required · click to relax' : 'Optional · click to require'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                ctx.dispatch(
+                                    updateQuestion(question.id, { required: !question.required }),
+                                );
+                            }}
+                        >
+                            required
+                        </button>
+                        <button
+                            type="button"
                             className="bldr-icon-btn"
                             aria-label="Delete question"
                             onClick={(event) => {
@@ -212,10 +229,16 @@ export function QuestionCard({ question, displayIndex, settleIndex, ctx }: Quest
                     >
                         <div className="bldr-qdesc-inner">
                             {selected ? (
-                                <input
+                                // A textarea (schema allows 2000 chars), auto-grown
+                                // by rows so the slot's height animation stays smooth.
+                                <textarea
                                     className="bldr-qdesc"
                                     aria-label="Question description"
                                     placeholder="Add a description"
+                                    rows={Math.min(
+                                        4,
+                                        (question.description ?? '').split('\n').length,
+                                    )}
                                     value={question.description ?? ''}
                                     onChange={(event) =>
                                         ctx.dispatch(

@@ -25,7 +25,7 @@ export interface CanvasCtx {
     ruleSourceQuestions: Set<string>;
     justAddedId: string | null;
     onAutoFocusDone: () => void;
-    onAddQuestion: (sectionId: string, type: QuestionType) => void;
+    onAddQuestion: (sectionId: string, type: QuestionType, index?: number) => void;
     onMoveQuestion: (questionId: string, dir: -1 | 1) => void;
 }
 
@@ -76,8 +76,8 @@ export function Canvas({ doc, dispatch, selection, onSelect, settling }: CanvasP
     const onAutoFocusDone = useCallback(() => setJustAddedId(null), []);
 
     const onAddQuestion = useCallback(
-        (sectionId: string, type: QuestionType) => {
-            const action = addQuestion(sectionId, type);
+        (sectionId: string, type: QuestionType, index?: number) => {
+            const action = addQuestion(sectionId, type, index);
             dispatch(action);
             if (action.kind === 'ADD_QUESTION') {
                 onSelect({ kind: 'question', id: action.questionId });

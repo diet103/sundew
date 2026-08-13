@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Section } from '@shared/schema';
 import { deleteSection, moveSection, updateSection } from '../state/actions';
 import { AddQuestionMenu } from './AddQuestionMenu';
+import { InsertQuestionDivider } from './InsertQuestionDivider';
 import { QuestionCard } from './QuestionCard';
 import { sectionCardKey, useCardRegistry, visibilityHint } from './ThreadOverlay';
 import type { CanvasCtx } from './Canvas';
@@ -144,6 +145,10 @@ export function SectionCard({
             <ol className="bldr-qlist">
                 {section.questions.map((question, qi) => (
                     <li key={question.id}>
+                        <InsertQuestionDivider
+                            position={firstQuestionNumber + qi + 1}
+                            onInsert={(type) => ctx.onAddQuestion(section.id, type, qi)}
+                        />
                         <QuestionCard
                             question={question}
                             sectionId={section.id}

@@ -481,6 +481,60 @@
     gap: 0.7rem;
 }
 
+/* Insert-between divider: a slim hit strip riding the gap above each card.
+   The "+" is invisible until hover or keyboard focus; touch gets it faint. */
+.bldr-insertq {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    height: 0.7rem;
+    margin: -0.7rem 0 0;
+}
+
+.bldr-insertq-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: -0.4rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: var(--sd-card-bg);
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease;
+    z-index: 5;
+}
+
+.bldr-insertq:hover .bldr-insertq-btn,
+.bldr-insertq-btn:focus-visible,
+.bldr-insertq-btn[aria-expanded='true'] {
+    opacity: 1;
+}
+
+.bldr-insertq-btn:hover {
+    color: var(--accent-regular);
+    border-color: var(--accent-regular);
+}
+
+.bldr-insertq .bldr-menu {
+    position: absolute;
+    top: 1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+}
+
+@media (hover: none) {
+    .bldr-insertq-btn {
+        opacity: 0.5;
+    }
+}
+
 .bldr-qcard {
     --settle-o: 1;
     background-color: var(--sd-card-bg);
@@ -538,7 +592,25 @@
 
 .bldr-qactions {
     display: inline-flex;
-    gap: 0.15rem;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Inline required toggle: quiet text pill, accent when on. */
+.bldr-qreq {
+    appearance: none;
+    padding: 0.05rem 0.45rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--text-xs, 0.72rem);
+    cursor: pointer;
+}
+
+.bldr-qreq.is-on {
+    color: var(--accent-regular);
+    border-color: var(--accent-regular);
 }
 
 .bldr-qbody {
@@ -632,8 +704,15 @@ input.bldr-qtitle:focus {
     text-overflow: ellipsis;
 }
 
-input.bldr-qdesc:hover,
-input.bldr-qdesc:focus {
+/* As a textarea (selected state) the description wraps instead of clipping. */
+textarea.bldr-qdesc {
+    white-space: pre-wrap;
+    resize: none;
+    field-sizing: content;
+}
+
+textarea.bldr-qdesc:hover,
+textarea.bldr-qdesc:focus {
     border-bottom-color: var(--rule);
     outline: none;
 }
@@ -791,6 +870,16 @@ input.bldr-qdesc:focus {
 
 .bldr-qgrow.is-new {
     animation: bldr-grow-in 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bldr-qgrow.is-new {
+        animation: none;
+    }
+
+    .bldr-insertq-btn {
+        transition: none;
+    }
 }
 
 @keyframes bldr-grow-in {

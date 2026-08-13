@@ -16,6 +16,32 @@ export interface AddQuestionMenuProps {
     onAdd: (sectionId: string, type: QuestionType) => void;
 }
 
+/** The type-picker popup, shared by the section-foot button and the insert
+ *  dividers between cards. */
+export function QuestionTypeMenu({
+    ariaLabel,
+    onPick,
+}: {
+    ariaLabel: string;
+    onPick: (type: QuestionType) => void;
+}) {
+    return (
+        <div className="bldr-menu" role="menu" aria-label={ariaLabel}>
+            {QUESTION_TYPES.map((type) => (
+                <button
+                    key={type}
+                    type="button"
+                    role="menuitem"
+                    className="bldr-menu-item mono"
+                    onClick={() => onPick(type)}
+                >
+                    {QUESTION_TYPE_LABELS[type]}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export function AddQuestionMenu({ sectionId, onAdd }: AddQuestionMenuProps) {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
@@ -47,22 +73,13 @@ export function AddQuestionMenu({ sectionId, onAdd }: AddQuestionMenuProps) {
                 Add question
             </button>
             {open && (
-                <div className="bldr-menu" role="menu" aria-label="Question type">
-                    {QUESTION_TYPES.map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            role="menuitem"
-                            className="bldr-menu-item mono"
-                            onClick={() => {
-                                setOpen(false);
-                                onAdd(sectionId, type);
-                            }}
-                        >
-                            {QUESTION_TYPE_LABELS[type]}
-                        </button>
-                    ))}
-                </div>
+                <QuestionTypeMenu
+                    ariaLabel="Question type"
+                    onPick={(type) => {
+                        setOpen(false);
+                        onAdd(sectionId, type);
+                    }}
+                />
             )}
         </div>
     );

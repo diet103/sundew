@@ -147,6 +147,31 @@ describe('BuilderApp with a guest doc', () => {
         expect(titleInput()).toHaveValue('Specimen intake');
     });
 
+    it('inserts a question between cards from the divider, at that position', () => {
+        renderSeededBuilder();
+        // The first section holds Q-01..Q-03; insert at display position 2.
+        const divider = screen.getByRole('button', { name: 'Insert question at position 2' });
+        fireEvent.click(divider);
+        fireEvent.click(screen.getByRole('menuitem', { name: 'rating' }));
+
+        // The new card lands between Observer name and the old Q-02, selected,
+        // with its (empty) title input focused.
+        const cards = screen.getAllByRole('group', { name: /^Question \d/ });
+        expect(cards[1]).toHaveAccessibleName('Question 2: untitled');
+        expect(screen.getByRole('textbox', { name: 'Question title' })).toHaveFocus();
+    });
+
+    it('toggles required from the card pill without opening the inspector', () => {
+        renderSeededBuilder();
+        const card = screen
+            .getByRole('group', { name: /^Question 1: Observer name/ })
+            .closest('.bldr-qgrow') as HTMLElement;
+        const pill = within(card).getByRole('button', { name: 'Required' });
+        expect(pill).toHaveAttribute('aria-pressed', 'false');
+        fireEvent.click(pill);
+        expect(pill).toHaveAttribute('aria-pressed', 'true');
+    });
+
     it('toggles into the live preview and back to the builder', () => {
         renderSeededBuilder();
         fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
