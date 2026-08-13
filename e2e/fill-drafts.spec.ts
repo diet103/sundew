@@ -128,8 +128,9 @@ test.describe('fill drafts', () => {
         const offer = guest.getByText('1 draft for this form remains in this browser');
         await expect(offer).toBeVisible();
 
-        guest.once('dialog', (dialog) => void dialog.accept());
         await guest.getByRole('button', { name: 'Discard them' }).click();
+        const confirm = guest.getByRole('dialog', { name: 'Discard all drafts for this form?' });
+        await confirm.getByRole('button', { name: 'Discard drafts' }).click();
         await expect(offer).toHaveCount(0);
     });
 });

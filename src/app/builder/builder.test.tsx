@@ -201,4 +201,21 @@ describe('BuilderApp with a guest doc', () => {
         expect(screen.getByDisplayValue('Botanical notes')).toBeInTheDocument();
         expect(screen.queryByText(/answers here aren't saved/)).not.toBeInTheDocument();
     });
+
+    it('opens the shortcuts sheet on ? except while typing, and closes on Escape', () => {
+        renderSeededBuilder();
+
+        // Typing a literal "?" into a field must not open the sheet.
+        const title = screen.getByRole('textbox', { name: 'Form title' });
+        title.focus();
+        fireEvent.keyDown(title, { key: '?' });
+        expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument();
+
+        fireEvent.keyDown(document.body, { key: '?' });
+        const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+        expect(within(sheet).getByText('undo')).toBeInTheDocument();
+
+        fireEvent.keyDown(sheet, { key: 'Escape' });
+        expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument();
+    });
 });
