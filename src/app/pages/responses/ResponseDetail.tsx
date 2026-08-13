@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { FormDefinition } from '@shared/schema';
 import { evaluateVisibility } from '@shared/visibility';
 import { api } from '@app/api/client';
+import { ConfirmDialog } from '@app/components/ConfirmDialog';
+import { SkeletonLines } from '@app/components/Skeleton';
 import { formatAnswer } from '@app/runtime/formatAnswer';
 
 export interface ResponseDetailProps {
@@ -18,6 +21,8 @@ export function ResponseDetail({
     getDefinition,
     onDeleted,
 }: ResponseDetailProps) {
+    const [confirming, setConfirming] = useState(false);
+    const [deleteError, setDeleteError] = useState(false);
     // A submission never changes after it lands, so the pair of fetches
     // (submission + the version-pinned definition it answered) caches as one
     // unit and reopening a row is instant.
@@ -31,7 +36,7 @@ export function ResponseDetail({
         staleTime: Infinity,
     });
 
-    if (detail.isPending) return <p className="mono resp-detail-note">loading…</p>;
+    if (detail.isPending) return <SkeletonLines widths={['42%', '66%']} />;
     if (detail.isError) {
         return <p className="mono resp-detail-note">Could not load this response.</p>;
     }
@@ -43,12 +48,13 @@ export function ResponseDetail({
         .map((question) => ({ question, value: submission.answers[question.id] }));
 
     const handleDelete = async () => {
-        if (!window.confirm('Delete this response? This cannot be undone.')) return;
+        setConfirming(false);
+        setDeleteError(false);
         try {
             await api.deleteSubmission(formId, submissionId);
             onDeleted();
         } catch {
-            window.alert('Could not delete this response. Try again.');
+            setDeleteError(true);
         }
     };
 
@@ -70,14 +76,29 @@ export function ResponseDetail({
             </dl>
             <div className="resp-detail-meta">
                 <span className="mono version-tag">v{submission.formVersion}</span>
+                {deleteError && (
+                    <span className="mono resp-detail-note">
+                        Could not delete this response. Try again.
+                    </span>
+                )}
                 <button
                     type="button"
                     className="text-button mono"
-                    onClick={() => void handleDelete()}
+                    onClick={() => setConfirming(true)}
                 >
                     Delete response
                 </button>
             </div>
+            {confirming && (
+                <ConfirmDialog
+                    title="Delete this response?"
+                    body="This cannot be undone."
+                    confirmLabel="Delete response"
+                    danger
+                    onConfirm={() => void handleDelete()}
+                    onCancel={() => setConfirming(false)}
+                />
+            )}
         </div>
     );
 }

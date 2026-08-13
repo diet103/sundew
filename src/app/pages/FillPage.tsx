@@ -5,20 +5,27 @@ import type { FillResponse, SubmitResponse } from '@shared/api';
 import type { Answers, AnswerValue } from '@shared/schema';
 import type { SubmissionError } from '@shared/visibility';
 import { evaluateVisibility } from '@shared/visibility';
-import { ApiFailure, api } from '@app/api/client';
+import { api } from '@app/api/client';
+import type { SubmitFailure } from './fillFailure';
+import { submitFailureKind } from './fillFailure';
 import { ErrorSummary } from '@app/runtime/ErrorSummary';
 import { FillOutline } from '@app/runtime/FillOutline';
 import { FormRenderer } from '@app/runtime/FormRenderer';
 import { useFillState } from '@app/runtime/useFillState';
 import { useDrafts } from '@app/runtime/drafts/useDrafts';
 import { DraftsMenu } from '@app/runtime/drafts/DraftsMenu';
+import { ConfirmDialog } from '@app/components/ConfirmDialog';
 import { SundewMark } from '@app/components/SundewMark';
+import { ThemeToggle } from '@app/components/ThemeToggle';
 
 // Respondent-facing footer: neutral voice, links back to the product.
 function FillFooter() {
     return (
         <footer className="fill-footer mono">
-            Made with <a href="/forms/">Sundew</a>, an open-source form builder
+            <span>
+                Made with <a href="/forms/">Sundew</a>, an open-source form builder
+            </span>
+            <ThemeToggle />
         </footer>
     );
 }
@@ -49,7 +56,8 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
     const [pruned, setPruned] = useState(drafts.ready.prunedCount > 0);
     const [done, setDone] = useState<SubmitResponse | null>(null);
     const [serverErrors, setServerErrors] = useState<SubmissionError[]>([]);
-    const [failure, setFailure] = useState<'rateLimited' | 'generic' | null>(null);
+    const [failure, setFailure] = useState<SubmitFailure | null>(null);
+    const [confirmDiscard, setConfirmDiscard] = useState(false);
     const summaryRef = useRef<HTMLDivElement>(null);
 
     // Mutations never retry, so a flaky network can't double-submit a response.
@@ -65,9 +73,7 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
             }
         },
         onError: (error) => {
-            setFailure(
-                error instanceof ApiFailure && error.status === 429 ? 'rateLimited' : 'generic',
-            );
+            setFailure(submitFailureKind(error));
         },
     });
     const submitting = submitMutation.isPending;
@@ -155,20 +161,39 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                             <button
                                 type="button"
                                 className="text-button mono"
-                                onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            'Discard all drafts for this form? This cannot be undone.',
-                                        )
-                                    ) {
-                                        drafts.discardAll();
-                                    }
-                                }}
+                                onClick={() => setConfirmDiscard(true)}
                             >
                                 Discard them
                             </button>
                         </p>
                     )}
+                    {confirmDiscard && (
+                        <ConfirmDialog
+                            title="Discard all drafts for this form?"
+                            body="This cannot be undone."
+                            confirmLabel="Discard drafts"
+                            danger
+                            onConfirm={() => {
+                                drafts.discardAll();
+                                setConfirmDiscard(false);
+                            }}
+                            onCancel={() => setConfirmDiscard(false)}
+                        />
+                    )}
+                    <p className="mono quiet-notice">
+                        <button
+                            type="button"
+                            className="text-button mono"
+                            onClick={() => {
+                                setDone(null);
+                                setServerErrors([]);
+                                setFailure(null);
+                                window.scrollTo(0, 0);
+                            }}
+                        >
+                            Submit another response
+                        </button>
+                    </p>
                 </div>
             </FillShell>
         );
@@ -219,6 +244,17 @@ function FillForm({ slug, fill }: { slug: string; fill: FillResponse }) {
                             {failure === 'rateLimited' && (
                                 <p className="mono quiet-notice">
                                     Too many submissions from this network. Try again in a minute.
+                                </p>
+                            )}
+                            {failure === 'full' && (
+                                <p className="mono quiet-notice">
+                                    This form is no longer accepting responses.
+                                </p>
+                            )}
+                            {failure === 'tooLarge' && (
+                                <p className="mono quiet-notice">
+                                    This response is too large to submit. Shorten long answers and
+                                    try again.
                                 </p>
                             )}
                             {failure === 'generic' && (

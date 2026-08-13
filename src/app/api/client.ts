@@ -22,11 +22,28 @@ const BASE = '/forms/api';
 /** Network failure (status null) or an unexpected status, including 5xx. */
 export class ApiFailure extends Error {
     readonly status: number | null;
+    /**
+     * The body's `error` code when the server sent one. Needed where status
+     * alone is ambiguous: a 403 is either CSRF or a domain refusal like
+     * `submissionCap`.
+     */
+    readonly code: string | null;
 
-    constructor(status: number | null, message?: string) {
+    constructor(status: number | null, code: string | null = null, message?: string) {
         super(message ?? (status === null ? 'network error' : `request failed (${status})`));
         this.name = 'ApiFailure';
         this.status = status;
+        this.code = code;
+    }
+}
+
+/** Best-effort read of the standard `{ error }` body; null when not JSON. */
+async function errorCode(res: Response): Promise<string | null> {
+    try {
+        const body = (await res.clone().json()) as { error?: unknown };
+        return typeof body.error === 'string' ? body.error : null;
+    } catch {
+        return null;
     }
 }
 
@@ -173,8 +190,9 @@ export const api = {
             const body = (await res.json()) as { errors?: SubmissionError[] };
             return { ok: false, errors: body.errors ?? [] };
         }
-        // 429 and other statuses are surfaced as ApiFailure for the page to map.
-        throw new ApiFailure(res.status);
+        // 429/403/413 and the rest surface as ApiFailure; the body's error
+        // code rides along so the page can tell a full form from CSRF.
+        throw new ApiFailure(res.status, await errorCode(res));
     },
 
     /** Dev-only stub sign-in (404s unless the worker runs with E2E_AUTH_STUB=1). */

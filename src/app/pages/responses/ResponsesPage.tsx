@@ -11,6 +11,7 @@ import { SignInButtons } from '@app/auth/SignInButtons';
 import { AppFooter } from '@app/components/AppFooter';
 import { exportCsv } from './exportCsv';
 import { ResponseDetail } from './ResponseDetail';
+import { SkeletonLines } from '@app/components/Skeleton';
 import { RespEmpty, ShareChip } from './ShareChip';
 import { SummaryPanel } from './SummaryPanel';
 
@@ -57,6 +58,7 @@ function StatusLine({ form }: { form: FormDetail }) {
 function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     const queryClient = useQueryClient();
     const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState(false);
     const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
 
     const submissionsKey = ['forms', formId, 'submissions'] as const;
@@ -134,13 +136,13 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
             }
             exportCsv(definition, details);
         } catch {
-            window.alert('Export failed. Try again.');
+            setExportError(true);
         } finally {
             setExporting(false);
         }
     };
 
-    if (submissions.isPending) return <p className="mono quiet-notice">loading…</p>;
+    if (submissions.isPending) return <SkeletonLines widths={['58%', '73%', '64%']} />;
     // Error only replaces the inbox when nothing is cached: a failed
     // fetchNextPage (or focus refetch) sets isError while the loaded pages
     // remain in data, and those must stay on screen with Load more available
@@ -156,11 +158,17 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     return (
         <>
             <div className="resp-toolbar">
+                {exportError && (
+                    <span className="mono quiet-notice">Export failed. Try again.</span>
+                )}
                 <button
                     type="button"
                     className="text-button mono"
                     disabled={exporting}
-                    onClick={() => void handleExport()}
+                    onClick={() => {
+                        setExportError(false);
+                        void handleExport();
+                    }}
                 >
                     {exporting ? 'Exporting…' : 'Export CSV'}
                 </button>

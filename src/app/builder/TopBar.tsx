@@ -4,6 +4,7 @@ import { Link } from 'wouter';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import { SundewMark } from '@app/components/SundewMark';
+import { ThemeToggle } from '@app/components/ThemeToggle';
 import { EyeIcon, RedoIcon, SendIcon, SignOutIcon, UndoIcon } from '@app/components/icons';
 import type { BuilderAction } from './state/actions';
 import { setFormMeta } from './state/actions';
@@ -103,6 +104,7 @@ export function TopBar({
                     <RedoIcon />
                 </button>
                 <FormMenu formId={formId} isLocal={isLocal} title={title} dispatch={dispatch} />
+                <ThemeToggle className="bldr-icon-btn" />
                 <button
                     type="button"
                     className="bldr-btn bldr-btn-quiet with-ico"

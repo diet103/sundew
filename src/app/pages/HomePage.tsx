@@ -16,6 +16,8 @@ import {
     saveLocalDoc,
 } from '@app/builder/autosave/localMirror';
 import { AppFooter } from '@app/components/AppFooter';
+import { ConfirmDialog } from '@app/components/ConfirmDialog';
+import { SkeletonLines } from '@app/components/Skeleton';
 import { SundewMark } from '@app/components/SundewMark';
 import { relativeTime } from '@app/lib/relativeTime';
 
@@ -100,6 +102,7 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
     const [localKeys, setLocalKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
     const [claiming, setClaiming] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<FormSummary | null>(null);
     const forms = useQuery({ queryKey: ['forms'], queryFn: api.listForms });
 
     const createMutation = useMutation({
@@ -139,10 +142,8 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
     };
 
     const deleteForm = (form: FormSummary) => {
-        const title = form.title.trim() || 'Untitled form';
-        if (!window.confirm(`Delete "${title}" and all of its responses?`)) return;
         setActionError(null);
-        deleteMutation.mutate(form);
+        setPendingDelete(form);
     };
 
     const claimLocalDocs = async () => {
@@ -192,6 +193,20 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 </div>
             )}
             {actionError !== null && <p className="mono quiet-notice">{actionError}</p>}
+            {pendingDelete !== null && (
+                <ConfirmDialog
+                    title={`Delete "${pendingDelete.title.trim() || 'Untitled form'}"?`}
+                    body="All of its responses go with it. This cannot be undone."
+                    confirmLabel="Delete form"
+                    danger
+                    onConfirm={() => {
+                        deleteMutation.mutate(pendingDelete);
+                        setPendingDelete(null);
+                    }}
+                    onCancel={() => setPendingDelete(null)}
+                />
+            )}
+            {forms.isPending && <SkeletonLines widths={['52%', '68%', '45%']} />}
             {forms.isError && (
                 <p className="mono quiet-notice">
                     could not load your forms ·{' '}
@@ -259,6 +274,7 @@ export function HomePage() {
     const search = useSearch();
     const authError = new URLSearchParams(search).get('authError') === '1';
     const [guestKeys, setGuestKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
+    const [pendingGuestDelete, setPendingGuestDelete] = useState<string | null>(null);
     // The seed-or-resume redirect below runs once; afterwards the guest list
     // renders even when deletes shrink it to one or zero rows.
     const [redirectChecked, setRedirectChecked] = useState(false);
@@ -297,11 +313,14 @@ export function HomePage() {
     };
 
     const deleteGuestForm = (key: string) => {
-        const doc = loadLocalDoc(key);
-        const title = doc?.title.trim() ? doc.title : 'Untitled form';
-        if (!window.confirm(`Delete "${title}"? It only exists in this browser.`)) return;
-        deleteLocalDoc(key);
+        setPendingGuestDelete(key);
+    };
+
+    const confirmGuestDelete = () => {
+        if (pendingGuestDelete === null) return;
+        deleteLocalDoc(pendingGuestDelete);
         setGuestKeys(listLocalDocKeys(GUEST_DOC_PREFIX));
+        setPendingGuestDelete(null);
     };
 
     return (
@@ -318,6 +337,16 @@ export function HomePage() {
                         localKeys={guestKeys}
                         onNewForm={newGuestForm}
                         onDelete={deleteGuestForm}
+                    />
+                )}
+                {pendingGuestDelete !== null && (
+                    <ConfirmDialog
+                        title={`Delete "${loadLocalDoc(pendingGuestDelete)?.title.trim() || 'Untitled form'}"?`}
+                        body="It only exists in this browser."
+                        confirmLabel="Delete form"
+                        danger
+                        onConfirm={confirmGuestDelete}
+                        onCancel={() => setPendingGuestDelete(null)}
                     />
                 )}
             </main>

@@ -173,3 +173,22 @@ export function ListIcon() {
         </Icon>
     );
 }
+
+/** Sun — the theme you'd switch to from dark. */
+export function SunIcon() {
+    return (
+        <Icon>
+            <circle cx="8" cy="8" r="3" />
+            <path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3" />
+        </Icon>
+    );
+}
+
+/** Moon — the theme you'd switch to from light. */
+export function MoonIcon() {
+    return (
+        <Icon>
+            <path d="M13.2 9.8a5.6 5.6 0 0 1-7-7 5.9 5.9 0 1 0 7 7Z" />
+        </Icon>
+    );
+}

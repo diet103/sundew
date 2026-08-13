@@ -721,6 +721,13 @@ button.signin-button:disabled {
     display: inline-flex;
 }
 
+/* No hover on touch: rename/delete must be reachable without one. */
+@media (hover: none) {
+    .fill-draftrow-actions {
+        display: inline-flex;
+    }
+}
+
 .fill-rowaction {
     font-size: var(--text-sm);
     color: var(--muted);
@@ -953,6 +960,129 @@ button.signin-button:disabled {
     padding: 1.1rem 0 1.6rem;
     border-top: 1px solid var(--rule);
     color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+/* ---- Loading skeletons ------------------------------------------------------ */
+
+.skel-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 0.4rem 0;
+}
+
+.skel {
+    position: relative;
+    overflow: hidden;
+    height: 1.1em;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+}
+
+.skel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--rule), transparent);
+    opacity: 0.55;
+    animation: skel-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes skel-sweep {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skel::after {
+        animation: none;
+    }
+}
+
+/* ---- Confirm dialog -------------------------------------------------------- */
+
+.confirm-modal {
+    max-width: 26rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1.3rem 1.4rem;
+}
+
+.confirm-title {
+    font-size: var(--text-lg);
+}
+
+.confirm-body {
+    color: var(--muted);
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1.2rem;
+    margin-top: 0.3rem;
+}
+
+.confirm-btn {
+    appearance: none;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--gray-0);
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+
+.confirm-btn:hover {
+    border-color: var(--accent-regular);
+}
+
+.confirm-btn-danger {
+    color: var(--crimson);
+    border-color: var(--crimson);
+}
+
+.confirm-btn-danger:hover {
+    background: var(--crimson);
+    color: var(--gray-999);
+    border-color: var(--crimson);
+}
+
+/* ---- Theme toggle ---------------------------------------------------------- */
+
+.theme-toggle {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    color: var(--accent-regular);
+}
+
+.app-footer-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
 }
 
 .fill-footer a {
@@ -1007,6 +1137,8 @@ button.signin-button:disabled {
 .resp-toolbar {
     display: flex;
     justify-content: flex-end;
+    align-items: baseline;
+    gap: 1rem;
     margin-bottom: 0.6rem;
 }
 

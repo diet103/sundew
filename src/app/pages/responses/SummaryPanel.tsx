@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { FormDetail, QuestionStats } from '@shared/api';
 import { api } from '@app/api/client';
+import { SkeletonLines } from '@app/components/Skeleton';
 import { relativeTime } from '@app/lib/relativeTime';
 import { OptionBars, RatingHistogram, Sparkline, StatTile, TextAnswers } from './charts';
 import { bucketByLocalDay, countSince, formatAverage } from './chartData';
@@ -85,7 +86,7 @@ export function SummaryPanel({
         refetchInterval: active ? 60_000 : false,
     });
 
-    if (stats.isPending) return <p className="mono quiet-notice">loading…</p>;
+    if (stats.isPending) return <SkeletonLines widths={['34%', '78%', '61%', '70%']} />;
     if (stats.isError) return <p className="mono quiet-notice">Could not load the summary.</p>;
 
     const data = stats.data;

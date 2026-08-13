@@ -134,19 +134,17 @@ describe('BuilderApp with a guest doc', () => {
         fireEvent.change(titleInput(), { target: { value: 'Renamed form' } });
         expect(titleInput()).toHaveValue('Renamed form');
 
-        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        // The styled dialog replaces window.confirm: Cancel leaves the form alone.
         fireEvent.click(screen.getByRole('button', { name: 'Form' }));
         fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
-        expect(confirmSpy).toHaveBeenCalledWith(
-            'Reset this form to the demo form? Everything in it will be replaced.',
-        );
+        expect(screen.getByRole('dialog', { name: 'Reset to the demo form?' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(titleInput()).toHaveValue('Renamed form');
 
-        confirmSpy.mockReturnValue(true);
         fireEvent.click(screen.getByRole('button', { name: 'Form' }));
         fireEvent.click(screen.getByRole('menuitem', { name: 'Reset to demo form' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Reset form' }));
         expect(titleInput()).toHaveValue('Specimen intake');
-        confirmSpy.mockRestore();
     });
 
     it('toggles into the live preview and back to the builder', () => {

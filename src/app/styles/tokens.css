@@ -3,8 +3,9 @@
    (resume-website/src/styles/global.css). Values must match that file
    exactly; do not edit tokens here without changing the site first.
    Theme mechanism mirrors the site: light is the base on :root, dark is
-   an override under :root.theme-dark (index.html ships class="theme-dark",
-   so dark is the default presentation, same as the site).
+   an override under :root.theme-dark. An inline script in index.html adds
+   the class before first paint (dark is the default presentation, same as
+   the site); components/ThemeToggle.tsx flips and persists it.
    =========================================================================== */
 
 /* ---- LIGHT theme (default :root) — bone ground, charcoal ink ------------- */

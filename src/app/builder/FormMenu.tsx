@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { api } from '@app/api/client';
+import { ConfirmDialog } from '@app/components/ConfirmDialog';
 import { MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
 import { deleteLocalDoc, guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import type { BuilderAction } from './state/actions';
@@ -24,6 +25,7 @@ export interface FormMenuProps {
  */
 export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
     const [open, setOpen] = useState(false);
+    const [pending, setPending] = useState<'reset' | 'delete' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const [, navigate] = useLocation();
@@ -67,24 +69,15 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
         createMutation.mutate();
     };
 
-    const resetToDemo = () => {
-        const ok = window.confirm(
-            'Reset this form to the demo form? Everything in it will be replaced.',
-        );
-        if (!ok) return;
-        dispatch(resetDoc(specimenIntake()));
-    };
+    const label = title.trim() === '' ? 'Untitled form' : title;
 
-    const deleteThisForm = () => {
-        setError(null);
-        const label = title.trim() === '' ? 'Untitled form' : title;
+    const confirmDelete = () => {
+        setPending(null);
         if (isLocal) {
-            if (!window.confirm(`Delete "${label}"? It only exists in this browser.`)) return;
             deleteLocalDoc(guestDocKey(formId));
             navigate('/');
             return;
         }
-        if (!window.confirm(`Delete "${label}" and all of its responses?`)) return;
         deleteMutation.mutate();
     };
 
@@ -124,9 +117,39 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
             {open && (
                 <div className="bldr-menu bldr-menu-right" role="menu" aria-label="Form actions">
                     {item(<PlusIcon />, 'New form', newForm)}
-                    {item(<ResetIcon />, 'Reset to demo form', resetToDemo)}
-                    {item(<TrashIcon />, 'Delete this form', deleteThisForm)}
+                    {item(<ResetIcon />, 'Reset to demo form', () => setPending('reset'))}
+                    {item(<TrashIcon />, 'Delete this form', () => {
+                        setError(null);
+                        setPending('delete');
+                    })}
                 </div>
+            )}
+            {pending === 'reset' && (
+                <ConfirmDialog
+                    title="Reset to the demo form?"
+                    body="Everything in this form will be replaced."
+                    confirmLabel="Reset form"
+                    danger
+                    onConfirm={() => {
+                        setPending(null);
+                        dispatch(resetDoc(specimenIntake()));
+                    }}
+                    onCancel={() => setPending(null)}
+                />
+            )}
+            {pending === 'delete' && (
+                <ConfirmDialog
+                    title={`Delete "${label}"?`}
+                    body={
+                        isLocal
+                            ? 'It only exists in this browser.'
+                            : 'All of its responses go with it. This cannot be undone.'
+                    }
+                    confirmLabel="Delete form"
+                    danger
+                    onConfirm={confirmDelete}
+                    onCancel={() => setPending(null)}
+                />
             )}
             {error !== null && <p className="bldr-hint mono">{error}</p>}
         </div>

@@ -109,19 +109,20 @@ describe('HomePage as a guest', () => {
         });
         saveLocalDoc(guestDocKey('local-aaa'), specimenIntake());
         saveLocalDoc(guestDocKey('local-bbb'), emptyForm());
-        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         renderAt('/', <HomePage />);
 
         const row = screen.getByText('Specimen intake').closest('.catalog-row') as HTMLElement;
         const deleteButton = within(row).getByRole('button', { name: 'Delete' });
         fireEvent.click(deleteButton);
+        // Cancelling the styled dialog leaves the doc in place.
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(window.localStorage.getItem(guestDocKey('local-aaa'))).not.toBeNull();
 
-        confirmSpy.mockReturnValue(true);
         fireEvent.click(deleteButton);
-        expect(confirmSpy).toHaveBeenLastCalledWith(
-            'Delete "Specimen intake"? It only exists in this browser.',
-        );
+        expect(
+            screen.getByRole('dialog', { name: 'Delete "Specimen intake"?' }),
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Delete form' }));
         expect(window.localStorage.getItem(guestDocKey('local-aaa'))).toBeNull();
         expect(screen.queryByText('Specimen intake')).not.toBeInTheDocument();
         expect(screen.getByText('Untitled form')).toBeInTheDocument();
@@ -190,19 +191,19 @@ describe('HomePage signed in', () => {
         });
         vi.mocked(api.listForms).mockResolvedValue(forms);
         vi.mocked(api.deleteForm).mockResolvedValue(undefined);
-        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         renderAt('/', <HomePage />);
 
         await screen.findByText('Field survey');
         const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
         fireEvent.click(deleteButtons[0]!);
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(api.deleteForm).not.toHaveBeenCalled();
 
-        confirmSpy.mockReturnValue(true);
         fireEvent.click(deleteButtons[0]!);
-        expect(confirmSpy).toHaveBeenLastCalledWith(
-            'Delete "Field survey" and all of its responses?',
-        );
+        expect(
+            screen.getByRole('dialog', { name: 'Delete "Field survey"?' }),
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Delete form' }));
         await waitFor(() => expect(api.deleteForm).toHaveBeenCalledWith('f1'));
     });
 
@@ -226,11 +227,11 @@ describe('HomePage signed in', () => {
                     rejectDelete = reject;
                 }),
         );
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
         renderAt('/', <HomePage />);
 
         await screen.findByText('Field survey');
         fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]!);
+        fireEvent.click(screen.getByRole('button', { name: 'Delete form' }));
 
         // Optimistic: the row is gone before the server answers.
         await waitFor(() => expect(screen.queryByText('Field survey')).not.toBeInTheDocument());

@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Answers, FormDefinition } from '@shared/schema';
-import { allQuestions } from '@shared/schema';
 import type { AppEnv } from '../env';
 import {
     deleteSubmission,
@@ -10,6 +9,7 @@ import {
     getVersionDefinition,
     listSubmissionsPage,
 } from '../db/queries';
+import { previewAnswer } from '../lib/preview';
 import { computeStats, type StatsInputRow } from '../lib/stats';
 
 const zId = z.uuid();
@@ -21,20 +21,6 @@ const zListQuery = z.object({
     limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 const zVersion = z.coerce.number().int().positive();
-
-// Inbox previews stay light even when an answer runs to LIMITS.answerChars.
-const PREVIEW_CHARS = 120;
-
-function firstStringAnswer(definition: FormDefinition | null, answers: Answers): string {
-    if (!definition) return '';
-    for (const question of allQuestions(definition)) {
-        const value = answers[question.id];
-        if (typeof value === 'string' && value.trim() !== '') {
-            return value.length > PREVIEW_CHARS ? value.slice(0, PREVIEW_CHARS) : value;
-        }
-    }
-    return '';
-}
 
 export const submissions = new Hono<AppEnv>();
 
@@ -77,7 +63,7 @@ submissions.get('/:id/submissions', async (c) => {
         items.push({
             id: row.id,
             submittedAt: row.submitted_at,
-            preview: firstStringAnswer(definition, JSON.parse(row.answers) as Answers),
+            preview: previewAnswer(definition, JSON.parse(row.answers) as Answers),
         });
     }
     return c.json({ items, nextCursor });
