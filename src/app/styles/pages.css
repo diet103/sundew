@@ -1096,6 +1096,282 @@ button.signin-button:disabled {
     padding: 1rem 0;
 }
 
+/* ---- Responses summary ----------------------------------------------------- */
+
+.resp-tabs {
+    display: flex;
+    gap: 1.4rem;
+    margin: 1.4rem 0 1.2rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.resp-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.35rem 0.1rem 0.55rem;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.resp-tab[aria-selected='true'] {
+    color: var(--gray-0);
+    border-bottom-color: var(--accent-regular);
+}
+
+.sum-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.sum-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.6rem 2.2rem;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.sum-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.sum-tile-value {
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    color: var(--gray-0);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.sum-tile-label {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+}
+
+.sum-spark {
+    flex: 1 1 15rem;
+    min-width: 12rem;
+    max-width: 22rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.sum-spark svg {
+    width: 100%;
+    height: 3rem;
+    display: block;
+    touch-action: none;
+}
+
+.sum-spark-line {
+    fill: none;
+    stroke: var(--accent-regular);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: sum-spark-draw 600ms ease-out backwards;
+}
+
+.sum-spark-area {
+    fill: var(--accent-regular);
+    fill-opacity: 0.1;
+    stroke: none;
+}
+
+.sum-spark-dot {
+    fill: var(--accent-regular);
+    stroke: var(--surface);
+    stroke-width: 1.5px;
+    vector-effect: non-scaling-stroke;
+}
+
+.sum-readout {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.sum-q {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.sum-q-title {
+    font-size: var(--text-lg);
+}
+
+.sum-q-meta {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+}
+
+.sum-q-removed {
+    color: var(--muted);
+}
+
+.sum-bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.sum-bar-row {
+    display: grid;
+    grid-template-columns: minmax(6rem, 14rem) 1fr auto;
+    align-items: center;
+    gap: 0.8rem;
+    border-radius: 4px;
+}
+
+.sum-bar-row:hover {
+    background: var(--accent-overlay, transparent);
+}
+
+.sum-bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sum-bar-track {
+    display: block;
+    height: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 0 4px 4px 0;
+    overflow: hidden;
+}
+
+.sum-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-regular);
+    border-radius: 0 4px 4px 0;
+    transform-origin: left center;
+    animation: sum-grow-x 500ms ease-out backwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.sum-bar-value {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.sum-footnote {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+}
+
+.sum-hist {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    max-width: 20rem;
+}
+
+.sum-hist-slot {
+    flex: 1 1 0;
+    max-width: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sum-hist-count {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-height: 1em;
+    line-height: 1;
+}
+
+.sum-hist-colwrap {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    height: 6rem;
+}
+
+.sum-hist-col {
+    display: block;
+    width: 100%;
+    min-height: 2px;
+    background: var(--accent-regular);
+    border-radius: 4px 4px 0 0;
+    transform-origin: bottom center;
+    animation: sum-grow-y 500ms ease-out backwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.sum-hist-x {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--muted);
+    line-height: 1;
+}
+
+.sum-latest {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.sum-latest-row {
+    padding: 0.45rem 0.7rem;
+    border-left: 2px solid var(--rule);
+    color: var(--gray-100, inherit);
+    overflow-wrap: anywhere;
+}
+
+@keyframes sum-grow-x {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+@keyframes sum-grow-y {
+    from {
+        transform: scaleY(0);
+    }
+}
+
+@keyframes sum-spark-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+}
+
+/* The global reduced-motion clamp zeroes durations but not delays; with
+   `backwards` fill the stagger would hold bars invisible. Kill it outright. */
+@media (prefers-reduced-motion: reduce) {
+    .sum-bar-fill,
+    .sum-hist-col,
+    .sum-spark-line {
+        animation: none;
+    }
+}
+
 /* ---- Breakpoint ----------------------------------------------------------- */
 @media (max-width: 50em) {
     .page-main {
@@ -1124,5 +1400,14 @@ button.signin-button:disabled {
 
     .fill-outline {
         display: none;
+    }
+
+    .sum-bar-row {
+        grid-template-columns: minmax(4.5rem, 7rem) 1fr auto;
+        gap: 0.5rem;
+    }
+
+    .sum-header {
+        gap: 1.2rem 1.6rem;
     }
 }

@@ -139,4 +139,36 @@ test.describe('golden path', () => {
         // The stored option id renders as its human label, not the raw uuid.
         await expect(detail).toContainText('A plant');
     });
+
+    test('g. the summary tab charts the counts', async ({ browser }) => {
+        // A second respondent takes the other branch so the charts have a split.
+        const guestCtx = await browser.newContext({ baseURL: BASE_URL });
+        const guest = await guestCtx.newPage();
+        try {
+            await guest.goto(`/forms/f/${slug}`);
+            await guest.locator('input[type="date"]').fill('2026-07-19');
+            await guest.getByRole('radio', { name: 'A spider' }).check();
+            await guest.getByRole('radio', { name: '2', exact: true }).check();
+            await guest.getByRole('button', { name: 'Submit' }).click();
+            await expect(guest.getByText('Logged. Thanks for the field report.')).toBeVisible();
+        } finally {
+            await guestCtx.close();
+        }
+
+        await owner.goto(`/forms/${serverFormId}/responses`);
+        await owner.getByRole('tab', { name: 'Summary' }).click();
+
+        // Header tiles: two responses total.
+        const totalTile = owner.locator('.sum-tile', { hasText: 'responses' });
+        await expect(totalTile).toContainText('2');
+
+        // The radio split renders as bars with counts and percentages.
+        const plantRow = owner.locator('.sum-bar-row', { hasText: 'A plant' });
+        await expect(plantRow).toContainText('1 · 50%');
+        const spiderRow = owner.locator('.sum-bar-row', { hasText: 'A spider' });
+        await expect(spiderRow).toContainText('1 · 50%');
+
+        // Ratings 4 and 2 average to 3.0.
+        await expect(owner.getByText('avg 3.0 of 5')).toBeVisible();
+    });
 });

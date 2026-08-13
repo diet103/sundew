@@ -14,6 +14,7 @@ const BUDGETS = [
     // useDrafts), so its budget is part of the fill route's eager JS.
     { pattern: /^draftStore-.*\.js$/, label: 'draft store', maxGzip: 5_000 },
     { pattern: /^DraftsDialog-.*\.js$/, label: 'drafts dialog', maxGzip: 10_000 },
+    { pattern: /^ResponsesPage-.*\.js$/, label: 'responses', maxGzip: 12_000 },
 ];
 
 let failed = false;

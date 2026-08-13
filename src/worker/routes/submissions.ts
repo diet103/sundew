@@ -10,6 +10,7 @@ import {
     getVersionDefinition,
     listSubmissionsPage,
 } from '../db/queries';
+import { computeStats, type StatsInputRow } from '../lib/stats';
 
 const zId = z.uuid();
 const zListQuery = z.object({
@@ -107,6 +108,42 @@ submissions.delete('/:id/submissions/:sid', async (c) => {
     const changes = await deleteSubmission(c.env.DB, form.id, sid.data);
     if (changes === 0) return c.json({ error: 'notFound' }, 404);
     return c.body(null, 204);
+});
+
+// Aggregates for the summary tab. Chunked keyset scan (a single row's answers
+// can run to LIMITS.answersBytes, so one unbounded SELECT is the wrong shape);
+// at the 1000-submission cap this is at most four round trips.
+const STATS_PAGE = 250;
+
+submissions.get('/:id/stats', async (c) => {
+    const id = zId.safeParse(c.req.param('id'));
+    if (!id.success) return c.json({ error: 'notFound' }, 404);
+    const form = await getOwnedForm(c.env.DB, id.data, c.get('userId')!);
+    if (!form) return c.json({ error: 'notFound' }, 404);
+
+    const rows: StatsInputRow[] = [];
+    let cursor: { submittedAt: number; id: string } | null = null;
+    for (;;) {
+        const page = await listSubmissionsPage(c.env.DB, form.id, STATS_PAGE, cursor);
+        for (const row of page) {
+            rows.push({
+                formVersion: row.form_version,
+                answers: JSON.parse(row.answers) as Answers,
+                submittedAt: row.submitted_at,
+            });
+        }
+        const last = page[page.length - 1];
+        if (page.length < STATS_PAGE || !last) break;
+        cursor = { submittedAt: last.submitted_at, id: last.id };
+    }
+
+    const definitions = new Map<number, FormDefinition>();
+    for (const row of rows) {
+        if (definitions.has(row.formVersion)) continue;
+        const stored = await getVersionDefinition(c.env.DB, form.id, row.formVersion);
+        if (stored !== null) definitions.set(row.formVersion, JSON.parse(stored) as FormDefinition);
+    }
+    return c.json(computeStats(rows, definitions));
 });
 
 submissions.get('/:id/versions/:v', async (c) => {

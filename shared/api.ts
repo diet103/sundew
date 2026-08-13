@@ -1,6 +1,6 @@
 // Request/response DTOs shared between the Worker API and the SPA.
 
-import type { Answers, FormDefinition } from './schema';
+import type { Answers, FormDefinition, QuestionType } from './schema';
 import type { SubmissionError } from './visibility';
 
 export type FormStatus = 'draft' | 'published' | 'unpublished';
@@ -123,6 +123,48 @@ export interface SubmissionDetail {
 
 export interface FormVersionResponse {
     definition: FormDefinition;
+}
+
+export interface OptionStat {
+    id: string;
+    label: string;
+    count: number;
+}
+
+/**
+ * Per-question aggregate for the responses summary. Aggregation keys on the
+ * stable question uuid across published versions; metadata (title, options,
+ * scale) resolves against the newest version that contains the question.
+ */
+export interface QuestionStats {
+    id: string;
+    type: QuestionType;
+    title: string;
+    /** Submissions with a non-empty, shape-valid answer for this question. */
+    answered: number;
+    /** True when the question is absent from the newest referenced version. */
+    removed: boolean;
+    /** select · radio · checkbox, in authored order (stale option ids append). */
+    options?: OptionStat[];
+    /** rating */
+    scale?: number;
+    /** rating; index 0 = rating 1, length = scale. */
+    distribution?: number[];
+    /** rating; omitted when nothing answered. */
+    average?: number;
+    /** shortText · longText: newest answers, truncated for preview. */
+    latest?: string[];
+    /** shortText only. */
+    format?: 'text' | 'email' | 'number' | 'date';
+    numberRange?: { min: number; max: number; mean: number };
+    dateRange?: { earliest: string; latest: string };
+}
+
+export interface FormStatsResponse {
+    total: number;
+    /** Ascending unix seconds; the client buckets in the viewer's timezone. */
+    timeline: number[];
+    questions: QuestionStats[];
 }
 
 export interface ApiError {

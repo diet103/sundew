@@ -3,6 +3,7 @@ import type {
     CreateFormResponse,
     FillResponse,
     FormDetail,
+    FormStatsResponse,
     FormSummary,
     MeResponse,
     PublishResponse,
@@ -137,6 +138,10 @@ export const api = {
 
     async getSubmission(id: string, sid: string): Promise<SubmissionDetail> {
         return readJson<SubmissionDetail>(await request(`/forms/${id}/submissions/${sid}`));
+    },
+
+    async getStats(id: string): Promise<FormStatsResponse> {
+        return readJson<FormStatsResponse>(await request(`/forms/${id}/stats`));
     },
 
     async deleteSubmission(id: string, sid: string): Promise<void> {

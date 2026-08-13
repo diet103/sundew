@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Link } from 'wouter';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +11,8 @@ import { SignInButtons } from '@app/auth/SignInButtons';
 import { AppFooter } from '@app/components/AppFooter';
 import { exportCsv } from './exportCsv';
 import { ResponseDetail } from './ResponseDetail';
+import { RespEmpty, ShareChip } from './ShareChip';
+import { SummaryPanel } from './SummaryPanel';
 
 function formatDateTime(unixSeconds: number): string {
     const d = new Date(unixSeconds * 1000);
@@ -36,28 +39,6 @@ async function mapConcurrent<T, R>(
     });
     await Promise.all(workers);
     return results;
-}
-
-function ShareChip({ slug }: { slug: string }) {
-    const [copied, setCopied] = useState(false);
-    const url = `${window.location.origin}/forms/f/${slug}`;
-    const copy = async () => {
-        try {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // clipboard unavailable; the URL is still selectable text
-        }
-    };
-    return (
-        <span className="share-chip mono">
-            <span className="share-chip-url">{url}</span>
-            <button type="button" className="text-button mono" onClick={() => void copy()}>
-                {copied ? 'copied' : 'Copy'}
-            </button>
-        </span>
-    );
 }
 
 function StatusLine({ form }: { form: FormDetail }) {
@@ -110,7 +91,8 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     };
 
     // A deleted response is dropped from every cached page in place; no
-    // refetch needed since the server-side delete is idempotent.
+    // refetch needed since the server-side delete is idempotent. The summary
+    // aggregates server-side, so its query refetches instead.
     const removeItem = (id: string) => {
         queryClient.setQueryData<InfiniteData<SubmissionListResponse>>(submissionsKey, (data) =>
             data === undefined
@@ -123,6 +105,7 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
                       })),
                   },
         );
+        void queryClient.invalidateQueries({ queryKey: ['forms', formId, 'stats'] });
     };
 
     // Demo scale (<=1000 submissions): page through everything, hydrate details
@@ -167,19 +150,7 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     }
 
     if (items.length === 0) {
-        return (
-            <div className="resp-empty">
-                <h2 className="resp-empty-title">Nothing caught yet.</h2>
-                {form.status === 'published' && form.slug !== null ? (
-                    <>
-                        <p>Share the link below; responses appear here the moment they arrive.</p>
-                        <ShareChip slug={form.slug} />
-                    </>
-                ) : (
-                    <p>Publish the form to start collecting responses.</p>
-                )}
-            </div>
-        );
+        return <RespEmpty title="Nothing caught yet." form={form} />;
     }
 
     return (
@@ -234,8 +205,50 @@ function Inbox({ formId, form }: { formId: string; form: FormDetail }) {
     );
 }
 
+type RespTab = 'inbox' | 'summary';
+const TAB_LABELS: Record<RespTab, string> = { inbox: 'Inbox', summary: 'Summary' };
+
+function RespTabs({ tab, onTab }: { tab: RespTab; onTab: (next: RespTab) => void }) {
+    // Roving tabindex: arrows move selection (and focus) between the two tabs.
+    const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const next: RespTab = tab === 'inbox' ? 'summary' : 'inbox';
+        onTab(next);
+        document.getElementById(`resp-tab-${next}`)?.focus();
+    };
+    return (
+        <div className="resp-tabs" role="tablist" aria-label="Responses view">
+            {(['inbox', 'summary'] as const).map((key) => (
+                <button
+                    key={key}
+                    id={`resp-tab-${key}`}
+                    type="button"
+                    role="tab"
+                    className="resp-tab mono"
+                    aria-selected={tab === key}
+                    aria-controls={`resp-panel-${key}`}
+                    tabIndex={tab === key ? 0 : -1}
+                    onKeyDown={onKeyDown}
+                    onClick={() => onTab(key)}
+                >
+                    {TAB_LABELS[key]}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export function ResponsesPage({ formId }: { formId: string }) {
     const { user, loading } = useSession();
+    // The inactive panel hides instead of unmounting: the inbox keeps its open
+    // rows and loaded pages, and the summary's mount animations play once.
+    const [tab, setTab] = useState<RespTab>('inbox');
+    const [summaryMounted, setSummaryMounted] = useState(false);
+    const selectTab = (next: RespTab) => {
+        setTab(next);
+        if (next === 'summary') setSummaryMounted(true);
+    };
     const form = useQuery({
         queryKey: ['forms', formId],
         queryFn: () => api.getForm(formId),
@@ -280,7 +293,29 @@ export function ResponsesPage({ formId }: { formId: string }) {
                                 </Link>
                             </p>
                         </header>
-                        <Inbox formId={formId} form={form.data} />
+                        <RespTabs tab={tab} onTab={selectTab} />
+                        <div
+                            id="resp-panel-inbox"
+                            role="tabpanel"
+                            aria-labelledby="resp-tab-inbox"
+                            hidden={tab !== 'inbox'}
+                        >
+                            <Inbox formId={formId} form={form.data} />
+                        </div>
+                        {summaryMounted && (
+                            <div
+                                id="resp-panel-summary"
+                                role="tabpanel"
+                                aria-labelledby="resp-tab-summary"
+                                hidden={tab !== 'summary'}
+                            >
+                                <SummaryPanel
+                                    formId={formId}
+                                    form={form.data}
+                                    active={tab === 'summary'}
+                                />
+                            </div>
+                        )}
                     </>
                 )}
             </main>
