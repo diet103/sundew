@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import type { FormDetail } from '@shared/api';
+
+// The QR encoder lives in its own lazy chunk, shared with the publish menu.
+const QrPanel = lazy(() => import('@app/components/QrPanel'));
 
 export function ShareChip({ slug }: { slug: string }) {
     const [copied, setCopied] = useState(false);
+    const [qrOpen, setQrOpen] = useState(false);
     const url = `${window.location.origin}/forms/f/${slug}`;
     const copy = async () => {
         try {
@@ -14,12 +18,27 @@ export function ShareChip({ slug }: { slug: string }) {
         }
     };
     return (
-        <span className="share-chip mono">
-            <span className="share-chip-url">{url}</span>
-            <button type="button" className="text-button mono" onClick={() => void copy()}>
-                {copied ? 'copied' : 'Copy'}
-            </button>
-        </span>
+        <>
+            <span className="share-chip mono">
+                <span className="share-chip-url">{url}</span>
+                <button type="button" className="text-button mono" onClick={() => void copy()}>
+                    {copied ? 'copied' : 'Copy'}
+                </button>
+                <button
+                    type="button"
+                    className="text-button mono"
+                    aria-expanded={qrOpen}
+                    onClick={() => setQrOpen((v) => !v)}
+                >
+                    {qrOpen ? 'Hide QR' : 'QR'}
+                </button>
+            </span>
+            {qrOpen && (
+                <Suspense fallback={<p className="mono quiet-notice">loading…</p>}>
+                    <QrPanel url={url} />
+                </Suspense>
+            )}
+        </>
     );
 }
 

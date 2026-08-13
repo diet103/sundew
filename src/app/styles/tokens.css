@@ -133,4 +133,8 @@
     --sd-thread: var(--accent-regular);
     --sd-live: var(--crimson);
     --sd-focus: var(--accent-regular);
+    /* Theme-invariant by design: a QR code must stay dark-on-light to scan,
+       so these two are literal values, the one deliberate exception here. */
+    --sd-qr-ink: #1c1c1c;
+    --sd-qr-paper: #fffdf8;
 }

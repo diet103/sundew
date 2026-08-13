@@ -15,6 +15,7 @@ const BUDGETS = [
     { pattern: /^draftStore-.*\.js$/, label: 'draft store', maxGzip: 5_000 },
     { pattern: /^DraftsDialog-.*\.js$/, label: 'drafts dialog', maxGzip: 10_000 },
     { pattern: /^ResponsesPage-.*\.js$/, label: 'responses', maxGzip: 12_000 },
+    { pattern: /^QrPanel-.*\.js$/, label: 'qr panel', maxGzip: 6_000 },
 ];
 
 let failed = false;

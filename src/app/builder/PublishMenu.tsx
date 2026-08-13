@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormDefinition } from '@shared/schema';
@@ -9,6 +9,9 @@ import { SignInButtons } from '@app/auth/SignInButtons';
 import { CopyIcon } from '@app/components/icons';
 import { relativeTime } from '@app/lib/relativeTime';
 import type { ServerFormMeta } from './useBuilderDoc';
+
+// The QR encoder lives in its own lazy chunk, shared with the responses page.
+const QrPanel = lazy(() => import('@app/components/QrPanel'));
 
 export interface PublishMenuProps {
     open: boolean;
@@ -45,6 +48,7 @@ export function PublishMenu({
     const panelRef = useRef<HTMLDivElement>(null);
     const [problems, setProblems] = useState<string[] | null>(null);
     const [copied, setCopied] = useState(false);
+    const [qrOpen, setQrOpen] = useState(false);
 
     useEffect(() => {
         if (open) panelRef.current?.focus();
@@ -171,9 +175,24 @@ export function PublishMenu({
                     </div>
                 )}
                 {shareUrl && (
-                    <a href={shareUrl} target="_blank" rel="noreferrer">
-                        Open fill page →
-                    </a>
+                    <>
+                        <button
+                            type="button"
+                            className="text-button mono"
+                            aria-expanded={qrOpen}
+                            onClick={() => setQrOpen((v) => !v)}
+                        >
+                            {qrOpen ? 'Hide QR code' : 'Show QR code'}
+                        </button>
+                        {qrOpen && (
+                            <Suspense fallback={<p className="bldr-hint mono">loading…</p>}>
+                                <QrPanel url={shareUrl} name={doc.title} />
+                            </Suspense>
+                        )}
+                        <a href={shareUrl} target="_blank" rel="noreferrer">
+                            Open fill page →
+                        </a>
+                    </>
                 )}
                 <p>
                     Anyone with the link can respond. Responses appear in your inbox as they arrive.
