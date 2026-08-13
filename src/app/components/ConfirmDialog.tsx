@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 // Small confirm dialog replacing window.confirm. Self-contained trap (the
 // drafts dialog has its own; importing it here would tangle the chunk graph).
 // Focus starts on Cancel — the safe answer to a destructive question — and
-// returns to the opener on close.
+// returns to the opener on close. Portaled to <body>: call sites include the
+// builder top bar, whose backdrop-filter would otherwise trap the fixed scrim
+// in its own containing block.
 
 export function ConfirmDialog({
     title,
@@ -58,7 +61,7 @@ export function ConfirmDialog({
         }
     };
 
-    return (
+    return createPortal(
         <div
             className="fill-modal-scrim"
             onPointerDown={(event) => {
@@ -94,6 +97,7 @@ export function ConfirmDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

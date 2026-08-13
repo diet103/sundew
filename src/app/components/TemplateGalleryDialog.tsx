@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { FormDefinition } from '@shared/schema';
 import { allQuestions } from '@shared/schema';
 import { TEMPLATES } from '@shared/templates';
@@ -8,6 +9,8 @@ import { TEMPLATES } from '@shared/templates';
 // template definitions ride in this lazy chunk, off the entry and builder
 // budgets. Callers decide what a pick means (guest local doc vs server
 // create); the dialog just reports the chosen factory, null for blank.
+// Portaled to <body>: the Form-menu call site sits inside the builder top
+// bar, whose backdrop-filter would otherwise trap the fixed scrim.
 
 export default function TemplateGalleryDialog({
     onPick,
@@ -51,7 +54,7 @@ export default function TemplateGalleryDialog({
         }
     };
 
-    return (
+    return createPortal(
         <div
             className="fill-modal-scrim"
             onPointerDown={(event) => {
@@ -100,6 +103,7 @@ export default function TemplateGalleryDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
