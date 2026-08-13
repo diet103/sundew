@@ -16,6 +16,7 @@ import { DemoBanner } from './DemoBanner';
 import { Canvas } from './canvas/Canvas';
 import { CardRegistryProvider } from './canvas/ThreadOverlay';
 import { Inspector } from './inspector/Inspector';
+import { ShortcutsDialog } from './ShortcutsDialog';
 import { NavStoreProvider, createNavStore } from './navigator/navStore';
 import { SectionListPanel } from './navigator/SectionListPanel';
 
@@ -68,6 +69,7 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     const b = useBuilderDoc(formId);
     const [preview, setPreview] = useState(false);
     const [publishOpen, setPublishOpen] = useState(false);
+    const [shortcutsOpen, setShortcutsOpen] = useState(false);
     const [autoPublish, setAutoPublish] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(false);
     const [settling, setSettling] = useState(startSettling);
@@ -92,10 +94,22 @@ function BuilderSessionApp({ formId }: { formId: string }) {
     }, [settling, b.ready]);
 
     // Global undo/redo. Handled even when focus sits in an input, so the app's
-    // document history wins over the browser's native text-field undo.
+    // document history wins over the browser's native text-field undo. The "?"
+    // cheat sheet opens only when the target isn't editable.
     const { undo, redo } = b;
     useEffect(() => {
+        const isEditable = (target: EventTarget | null) =>
+            target instanceof HTMLElement &&
+            (target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.tagName === 'SELECT' ||
+                target.isContentEditable);
         const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === '?' && !isEditable(event.target)) {
+                event.preventDefault();
+                setShortcutsOpen(true);
+                return;
+            }
             if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return;
             event.preventDefault();
             if (event.shiftKey) redo();
@@ -177,6 +191,7 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                     hasUnpublishedChanges={hasUnpublishedChanges}
                     publishOpen={publishOpen}
                     onPublishToggle={() => setPublishOpen((v) => !v)}
+                    onShowShortcuts={() => setShortcutsOpen(true)}
                     publishMenu={publishMenu}
                 />
                 <div className="bldr-main">
@@ -224,6 +239,7 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                         </>
                     )}
                 </div>
+                {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
             </div>
         </CardRegistryProvider>
     );

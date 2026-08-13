@@ -7,7 +7,7 @@ import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { ApiFailure, api } from '@app/api/client';
 import { ConfirmDialog } from '@app/components/ConfirmDialog';
-import { CopyIcon, MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
+import { CopyIcon, ListIcon, MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
 import { copyTitle } from '@app/lib/copyTitle';
 
 // Shares the gallery chunk with HomePage's lazy import of the same module.
@@ -23,6 +23,7 @@ export interface FormMenuProps {
     /** The live document, for duplication. */
     doc: FormDefinition;
     dispatch: (action: BuilderAction) => void;
+    onShowShortcuts: () => void;
 }
 
 /**
@@ -30,7 +31,7 @@ export interface FormMenuProps {
  * (undoable, rides normal persistence), or delete it. Guest (`local-*`) forms
  * act on the localStorage mirror; server forms mirror HomePage's mutations.
  */
-export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProps) {
+export function FormMenu({ formId, isLocal, title, doc, dispatch, onShowShortcuts }: FormMenuProps) {
     const [open, setOpen] = useState(false);
     const [pending, setPending] = useState<'reset' | 'delete' | null>(null);
     const [galleryOpen, setGalleryOpen] = useState(false);
@@ -157,6 +158,7 @@ export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProp
                 <div className="bldr-menu bldr-menu-right" role="menu" aria-label="Form actions">
                     {item(<PlusIcon />, 'New form', newForm)}
                     {item(<CopyIcon />, 'Duplicate form', duplicateThisForm)}
+                    {item(<ListIcon />, 'Keyboard shortcuts', onShowShortcuts)}
                     {item(<ResetIcon />, 'Reset to demo form', () => setPending('reset'))}
                     {item(<TrashIcon />, 'Delete this form', () => {
                         setError(null);

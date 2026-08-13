@@ -481,6 +481,43 @@
     gap: 0.7rem;
 }
 
+/* Shortcuts cheat sheet. */
+.shortcuts-modal {
+    max-width: 26rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.3rem 1.4rem;
+}
+
+.shortcuts-title {
+    font-size: var(--text-lg);
+}
+
+.shortcuts-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shortcuts-row {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 0.9rem;
+    align-items: baseline;
+}
+
+.shortcuts-keys {
+    font-size: var(--text-sm);
+    color: var(--gray-0);
+}
+
+.shortcuts-what {
+    margin: 0;
+    color: var(--muted);
+}
+
 /* Insert-between divider: a slim hit strip riding the gap above each card.
    The "+" is invisible until hover or keyboard focus; touch gets it faint. */
 .bldr-insertq {

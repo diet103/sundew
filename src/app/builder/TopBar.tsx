@@ -33,6 +33,7 @@ export interface TopBarProps {
     /** True only while the form is live and the working doc differs from the snapshot. */
     hasUnpublishedChanges: boolean;
     publishOpen: boolean;
+    onShowShortcuts: () => void;
     onPublishToggle: () => void;
     publishMenu: ReactNode;
 }
@@ -56,6 +57,7 @@ export function TopBar({
     hasUnpublishedChanges,
     publishOpen,
     onPublishToggle,
+    onShowShortcuts,
     publishMenu,
 }: TopBarProps) {
     const { user, signOut } = useSession();
@@ -113,6 +115,7 @@ export function TopBar({
                     title={title}
                     doc={doc}
                     dispatch={dispatch}
+                    onShowShortcuts={onShowShortcuts}
                 />
                 <ThemeToggle className="bldr-icon-btn" />
                 <button
