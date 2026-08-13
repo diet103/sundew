@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormDefinition } from '@shared/schema';
@@ -9,6 +9,9 @@ import { ApiFailure, api } from '@app/api/client';
 import { ConfirmDialog } from '@app/components/ConfirmDialog';
 import { CopyIcon, MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
 import { copyTitle } from '@app/lib/copyTitle';
+
+// Shares the gallery chunk with HomePage's lazy import of the same module.
+const TemplateGalleryDialog = lazy(() => import('@app/components/TemplateGalleryDialog'));
 import { deleteLocalDoc, guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import type { BuilderAction } from './state/actions';
 import { resetDoc } from './state/actions';
@@ -30,6 +33,7 @@ export interface FormMenuProps {
 export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProps) {
     const [open, setOpen] = useState(false);
     const [pending, setPending] = useState<'reset' | 'delete' | null>(null);
+    const [galleryOpen, setGalleryOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const [, navigate] = useLocation();
@@ -45,7 +49,7 @@ export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProp
     }, [open]);
 
     const createMutation = useMutation({
-        mutationFn: () => api.createForm(),
+        mutationFn: (definition?: FormDefinition) => api.createForm(definition),
         onSuccess: (created) => {
             void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
             navigate(`/edit/${created.id}`);
@@ -89,13 +93,19 @@ export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProp
 
     const newForm = () => {
         setError(null);
+        setGalleryOpen(true);
+    };
+
+    const createFromGallery = (make: (() => FormDefinition) | null) => {
+        setGalleryOpen(false);
+        const definition = make === null ? emptyForm() : make();
         if (isLocal) {
             const localId = `local-${crypto.randomUUID()}`;
-            saveLocalDoc(guestDocKey(localId), emptyForm());
+            saveLocalDoc(guestDocKey(localId), definition);
             navigate(`/edit/${localId}`);
             return;
         }
-        createMutation.mutate();
+        createMutation.mutate(make === null ? undefined : definition);
     };
 
     const label = title.trim() === '' ? 'Untitled form' : title;
@@ -153,6 +163,14 @@ export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProp
                         setPending('delete');
                     })}
                 </div>
+            )}
+            {galleryOpen && (
+                <Suspense fallback={null}>
+                    <TemplateGalleryDialog
+                        onPick={createFromGallery}
+                        onClose={() => setGalleryOpen(false)}
+                    />
+                </Suspense>
             )}
             {pending === 'reset' && (
                 <ConfirmDialog

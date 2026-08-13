@@ -106,6 +106,36 @@ describe('HomePage as a guest', () => {
         );
     });
 
+    it('seeds a guest doc from a gallery template', async () => {
+        mockUseSession.mockReturnValue({
+            user: null,
+            auth: { google: true, github: true, devStub: false },
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
+        saveLocalDoc(guestDocKey('local-aaa'), specimenIntake());
+        saveLocalDoc(guestDocKey('local-bbb'), emptyForm());
+        const location = renderAt('/', <HomePage />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'New form' }));
+        // The gallery chunk is lazy; its cards arrive async.
+        fireEvent.click(await screen.findByRole('button', { name: /Event RSVP/ }));
+
+        const titles: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (key !== null && key.startsWith(GUEST_DOC_PREFIX)) {
+                const doc = JSON.parse(window.localStorage.getItem(key) ?? '{}') as {
+                    title: string;
+                };
+                titles.push(doc.title);
+            }
+        }
+        expect(titles).toContain('Event RSVP');
+        expect(location.history[location.history.length - 1]).toMatch(/^\/edit\/local-/);
+    });
+
     it('deletes a guest form row only after confirm and drops its local key', () => {
         mockUseSession.mockReturnValue({
             user: null,

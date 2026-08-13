@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FormStatus, FormSummary } from '@shared/api';
+import type { FormDefinition } from '@shared/schema';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { ApiFailure, api } from '@app/api/client';
@@ -21,6 +22,9 @@ import { SkeletonLines } from '@app/components/Skeleton';
 import { SundewMark } from '@app/components/SundewMark';
 import { copyTitle } from '@app/lib/copyTitle';
 import { relativeTime } from '@app/lib/relativeTime';
+
+// Template definitions ride in the gallery's lazy chunk, off the entry budget.
+const TemplateGalleryDialog = lazy(() => import('@app/components/TemplateGalleryDialog'));
 
 function localIdFromKey(key: string): string {
     return key.slice(GUEST_DOC_PREFIX.length);
@@ -104,15 +108,21 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
     const [claiming, setClaiming] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
     const [pendingDelete, setPendingDelete] = useState<FormSummary | null>(null);
+    const [galleryOpen, setGalleryOpen] = useState(false);
     const forms = useQuery({ queryKey: ['forms'], queryFn: api.listForms });
 
     const createMutation = useMutation({
-        mutationFn: () => api.createForm(),
+        mutationFn: (definition?: FormDefinition) => api.createForm(definition),
         onSuccess: (created) => {
             void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
             navigate(`/edit/${created.id}`);
         },
-        onError: () => setActionError('could not create the form · try again'),
+        onError: (error) =>
+            setActionError(
+                error instanceof ApiFailure && error.status === 403
+                    ? 'form limit reached · delete a form first'
+                    : 'could not create the form · try again',
+            ),
     });
 
     // Optimistic removal: the row disappears on click; a failed DELETE rolls
@@ -139,7 +149,12 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
 
     const newForm = () => {
         setActionError(null);
-        createMutation.mutate();
+        setGalleryOpen(true);
+    };
+
+    const createFromGallery = (make: (() => FormDefinition) | null) => {
+        setGalleryOpen(false);
+        createMutation.mutate(make === null ? undefined : make());
     };
 
     const deleteForm = (form: FormSummary) => {
@@ -220,6 +235,14 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                 </div>
             )}
             {actionError !== null && <p className="mono quiet-notice">{actionError}</p>}
+            {galleryOpen && (
+                <Suspense fallback={null}>
+                    <TemplateGalleryDialog
+                        onPick={createFromGallery}
+                        onClose={() => setGalleryOpen(false)}
+                    />
+                </Suspense>
+            )}
             {pendingDelete !== null && (
                 <ConfirmDialog
                     title={`Delete "${pendingDelete.title.trim() || 'Untitled form'}"?`}
@@ -310,6 +333,7 @@ export function HomePage() {
     const authError = new URLSearchParams(search).get('authError') === '1';
     const [guestKeys, setGuestKeys] = useState<string[]>(() => listLocalDocKeys(GUEST_DOC_PREFIX));
     const [pendingGuestDelete, setPendingGuestDelete] = useState<string | null>(null);
+    const [galleryOpen, setGalleryOpen] = useState(false);
     // The seed-or-resume redirect below runs once; afterwards the guest list
     // renders even when deletes shrink it to one or zero rows.
     const [redirectChecked, setRedirectChecked] = useState(false);
@@ -340,9 +364,12 @@ export function HomePage() {
         );
     }
 
-    const newGuestForm = () => {
+    const newGuestForm = () => setGalleryOpen(true);
+
+    const createGuestForm = (make: (() => FormDefinition) | null) => {
+        setGalleryOpen(false);
         const localId = `local-${crypto.randomUUID()}`;
-        saveLocalDoc(guestDocKey(localId), emptyForm());
+        saveLocalDoc(guestDocKey(localId), make === null ? emptyForm() : make());
         setGuestKeys(listLocalDocKeys(GUEST_DOC_PREFIX));
         navigate(`/edit/${localId}`);
     };
@@ -383,6 +410,14 @@ export function HomePage() {
                         onConfirm={confirmGuestDelete}
                         onCancel={() => setPendingGuestDelete(null)}
                     />
+                )}
+                {galleryOpen && !user && (
+                    <Suspense fallback={null}>
+                        <TemplateGalleryDialog
+                            onPick={createGuestForm}
+                            onClose={() => setGalleryOpen(false)}
+                        />
+                    </Suspense>
                 )}
             </main>
             <AppFooter />
