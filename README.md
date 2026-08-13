@@ -14,6 +14,24 @@ running is in here.
 
 ![A published form on its share link: outline rail, conditional sections revealed as you answer](docs/fill.png)
 
+## What's in the box
+
+- **Builder** · drag-and-drop canvas that doubles as the live preview, undo/redo,
+  insert-a-question-anywhere dividers, duplicate form, a template gallery of four
+  starting points, and a keyboard-shortcut sheet on `?`.
+- **Logic** · answer choices reveal later questions and whole sections; one evaluator
+  runs in the builder preview, the fill page, and the server's submit validation.
+- **Validation** · required, number bounds, choice-count limits, placeholders, rating
+  end labels, and publish-time checks that name the offending question.
+- **Results** · an inbox that renders every response against the exact form version it
+  answered, CSV export, and a Summary tab of per-question charts (bars, histograms,
+  a response-timeline sparkline) aggregated server-side.
+- **Sharing** · publish to a share link with a QR code from a hand-rolled,
+  zero-dependency encoder — Reed-Solomon, mask scoring, the lot.
+- **Comfort** · light and dark themes with a no-flash toggle, autosave with an honest
+  save pill, styled confirm dialogs, loading skeletons, reduced-motion support
+  throughout.
+
 ## Why this exists
 
 I built a forms engine inside a large proprietary platform that I can't show anyone. Sundew
@@ -137,8 +155,9 @@ that signs in a local account, so publish → share link → fill → inbox is f
 offline. Real local OAuth, if you want it, is walked through in
 [DEPLOY.md](DEPLOY.md#local-oauth-optional).
 
-Tests: `npm test` (reducer, visibility evaluator, autosave machine, renderer, worker
-helpers) · `npm run e2e` (Playwright golden path against the local worker; run
+Tests: `npm test` (reducer, visibility evaluator, autosave machine, renderer, stats
+aggregator, QR encoder, worker helpers) · `npm run e2e` (Playwright golden path against
+the local worker; run
 `npx playwright install chromium` once first — and note e2e writes `E2E_AUTH_STUB=1`
 into your `.dev.vars`).
 
@@ -182,11 +201,11 @@ a commented-out `routes` block for serving under your own domain. Secrets go thr
 `src/app/styles/tokens.css` — a light `:root` block, a dark `:root.theme-dark` block,
 and semantic `--sd-*` aliases the components consume. No other file hardcodes a color,
 except `public/favicon.svg`, which carries its own copy of the accent.
-Dark is the shipped default via `class="theme-dark"` on the `<html>` element in
-`index.html`; delete the class to go light, or wire a toggle that flips it on
-`document.documentElement` — the palette on the other side is already built. Fonts are
-self-hosted OFL subsets in `public/fonts/` + `src/app/styles/fonts.css` (mind the
-Newsreader metric overrides there if you swap faces).
+Dark is the shipped default; the built-in toggle (top bar, footer, fill page) flips to
+light and persists the choice, which an inline script in `index.html` applies before
+first paint. To ship light as the default instead, flip the comparison in that script.
+Fonts are self-hosted OFL subsets in `public/fonts/` + `src/app/styles/fonts.css` (mind
+the Newsreader metric overrides there if you swap faces).
 
 **Renaming it** touches: `BASE_TITLE` in `src/app/router.tsx`, the title and meta
 description in `index.html`, the wordmark in the top bar and footer copy, the seed demo
