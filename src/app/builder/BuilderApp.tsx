@@ -162,6 +162,7 @@ function BuilderSessionApp({ formId }: { formId: string }) {
                     formId={formId}
                     isLocal={b.isLocal}
                     title={b.doc.title}
+                    doc={b.doc}
                     dispatch={b.dispatch}
                     canUndo={b.canUndo}
                     canRedo={b.canRedo}

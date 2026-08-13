@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormDefinition } from '@shared/schema';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
-import { api } from '@app/api/client';
+import { ApiFailure, api } from '@app/api/client';
 import { ConfirmDialog } from '@app/components/ConfirmDialog';
-import { MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
+import { CopyIcon, MenuIcon, PlusIcon, ResetIcon, TrashIcon } from '@app/components/icons';
+import { copyTitle } from '@app/lib/copyTitle';
 import { deleteLocalDoc, guestDocKey, saveLocalDoc } from './autosave/localMirror';
 import type { BuilderAction } from './state/actions';
 import { resetDoc } from './state/actions';
@@ -15,6 +17,8 @@ export interface FormMenuProps {
     formId: string;
     isLocal: boolean;
     title: string;
+    /** The live document, for duplication. */
+    doc: FormDefinition;
     dispatch: (action: BuilderAction) => void;
 }
 
@@ -23,7 +27,7 @@ export interface FormMenuProps {
  * (undoable, rides normal persistence), or delete it. Guest (`local-*`) forms
  * act on the localStorage mirror; server forms mirror HomePage's mutations.
  */
-export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
+export function FormMenu({ formId, isLocal, title, doc, dispatch }: FormMenuProps) {
     const [open, setOpen] = useState(false);
     const [pending, setPending] = useState<'reset' | 'delete' | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -48,6 +52,31 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
         },
         onError: () => setError('could not create the form · try again'),
     });
+
+    const duplicateMutation = useMutation({
+        mutationFn: () => api.createForm({ ...doc, title: copyTitle(doc.title) }),
+        onSuccess: (created) => {
+            void queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
+            navigate(`/edit/${created.id}`);
+        },
+        onError: (error) =>
+            setError(
+                error instanceof ApiFailure && error.status === 403
+                    ? 'form limit reached · delete a form first'
+                    : 'could not duplicate the form · try again',
+            ),
+    });
+
+    const duplicateThisForm = () => {
+        setError(null);
+        if (isLocal) {
+            const localId = `local-${crypto.randomUUID()}`;
+            saveLocalDoc(guestDocKey(localId), { ...doc, title: copyTitle(doc.title) });
+            navigate(`/edit/${localId}`);
+            return;
+        }
+        duplicateMutation.mutate();
+    };
 
     const deleteMutation = useMutation({
         mutationFn: () => api.deleteForm(formId),
@@ -117,6 +146,7 @@ export function FormMenu({ formId, isLocal, title, dispatch }: FormMenuProps) {
             {open && (
                 <div className="bldr-menu bldr-menu-right" role="menu" aria-label="Form actions">
                     {item(<PlusIcon />, 'New form', newForm)}
+                    {item(<CopyIcon />, 'Duplicate form', duplicateThisForm)}
                     {item(<ResetIcon />, 'Reset to demo form', () => setPending('reset'))}
                     {item(<TrashIcon />, 'Delete this form', () => {
                         setError(null);

@@ -147,6 +147,23 @@ describe('BuilderApp with a guest doc', () => {
         expect(titleInput()).toHaveValue('Specimen intake');
     });
 
+    it('duplicates a guest form into a second local doc from the Form menu', () => {
+        renderSeededBuilder();
+        fireEvent.click(screen.getByRole('button', { name: 'Form' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Duplicate form' }));
+
+        const keys: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (key !== null && key.startsWith('sundew:doc:')) keys.push(key);
+        }
+        expect(keys).toHaveLength(2);
+        const copy = keys
+            .map((key) => JSON.parse(window.localStorage.getItem(key) ?? '{}') as { title: string })
+            .find((doc) => doc.title.endsWith('(copy)'));
+        expect(copy?.title).toBe('Specimen intake (copy)');
+    });
+
     it('inserts a question between cards from the divider, at that position', () => {
         renderSeededBuilder();
         // The first section holds Q-01..Q-03; insert at display position 2.

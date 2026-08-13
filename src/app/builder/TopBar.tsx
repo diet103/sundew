@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import type { FormDefinition } from '@shared/schema';
 import { Link } from 'wouter';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
@@ -16,6 +17,8 @@ export interface TopBarProps {
     formId: string;
     isLocal: boolean;
     title: string;
+    /** The live document; the Form menu duplicates from it. */
+    doc: FormDefinition;
     dispatch: (action: BuilderAction) => void;
     canUndo: boolean;
     canRedo: boolean;
@@ -38,6 +41,7 @@ export function TopBar({
     formId,
     isLocal,
     title,
+    doc,
     dispatch,
     canUndo,
     canRedo,
@@ -103,7 +107,13 @@ export function TopBar({
                 >
                     <RedoIcon />
                 </button>
-                <FormMenu formId={formId} isLocal={isLocal} title={title} dispatch={dispatch} />
+                <FormMenu
+                    formId={formId}
+                    isLocal={isLocal}
+                    title={title}
+                    doc={doc}
+                    dispatch={dispatch}
+                />
                 <ThemeToggle className="bldr-icon-btn" />
                 <button
                     type="button"

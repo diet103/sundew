@@ -9,17 +9,24 @@ import type { FormDefinition } from '@shared/schema';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
 import { GUEST_DOC_PREFIX, guestDocKey, saveLocalDoc } from '@app/builder/autosave/localMirror';
-import { api } from '@app/api/client';
+import { ApiFailure, api } from '@app/api/client';
 import { useSession } from '@app/auth/useSession';
 import { TestQueryProvider, createTestQueryClient } from '@app/testUtils';
 import { HomePage } from './HomePage';
 import { buildCsv } from './responses/exportCsv';
 
 vi.mock('@app/api/client', () => ({
-    ApiFailure: class ApiFailure extends Error {},
+    ApiFailure: class ApiFailure extends Error {
+        status: number | null;
+        constructor(status: number | null = null) {
+            super('api failure');
+            this.status = status;
+        }
+    },
     api: {
         listForms: vi.fn(),
         createForm: vi.fn(),
+        getForm: vi.fn(),
         deleteForm: vi.fn(),
         logout: vi.fn(),
     },
@@ -205,6 +212,71 @@ describe('HomePage signed in', () => {
         ).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Delete form' }));
         await waitFor(() => expect(api.deleteForm).toHaveBeenCalledWith('f1'));
+    });
+
+    it('duplicates a form via its full definition and lands in the new editor', async () => {
+        mockUseSession.mockReturnValue({
+            user,
+            auth: { google: true, github: true, devStub: false },
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
+        vi.mocked(api.listForms).mockResolvedValue(forms);
+        const definition = specimenIntake();
+        vi.mocked(api.getForm).mockResolvedValue({
+            id: 'f1',
+            title: 'Field survey',
+            definition,
+            revision: 3,
+            status: 'published',
+            slug: 'abc123',
+            publishedVersion: 1,
+            publishedAt: 1,
+            updatedAt: 1,
+        });
+        vi.mocked(api.createForm).mockResolvedValue({ id: 'f-copy', revision: 1 });
+        const location = renderAt('/', <HomePage />);
+
+        await screen.findByText('Field survey');
+        fireEvent.click(screen.getAllByRole('button', { name: 'Duplicate' })[0]!);
+        await waitFor(() =>
+            expect(api.createForm).toHaveBeenCalledWith({
+                ...definition,
+                title: 'Specimen intake (copy)',
+            }),
+        );
+        await waitFor(() =>
+            expect(location.history[location.history.length - 1]).toBe('/edit/f-copy'),
+        );
+    });
+
+    it('surfaces the form cap when duplication hits it', async () => {
+        mockUseSession.mockReturnValue({
+            user,
+            auth: { google: true, github: true, devStub: false },
+            loading: false,
+            refresh: async () => {},
+            signOut: async () => {},
+        });
+        vi.mocked(api.listForms).mockResolvedValue(forms);
+        vi.mocked(api.getForm).mockResolvedValue({
+            id: 'f1',
+            title: 'Field survey',
+            definition: specimenIntake(),
+            revision: 3,
+            status: 'published',
+            slug: 'abc123',
+            publishedVersion: 1,
+            publishedAt: 1,
+            updatedAt: 1,
+        });
+        vi.mocked(api.createForm).mockRejectedValue(new ApiFailure(403));
+        renderAt('/', <HomePage />);
+
+        await screen.findByText('Field survey');
+        fireEvent.click(screen.getAllByRole('button', { name: 'Duplicate' })[0]!);
+        await screen.findByText('form limit reached · delete a form first');
     });
 
     it('optimistically removes a deleted form and rolls back when the delete fails', async () => {

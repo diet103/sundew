@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FormStatus, FormSummary } from '@shared/api';
 import { emptyForm } from '@shared/schema';
 import { specimenIntake } from '@shared/seed';
-import { api } from '@app/api/client';
+import { ApiFailure, api } from '@app/api/client';
 import { useSession } from '@app/auth/useSession';
 import { SignInButtons } from '@app/auth/SignInButtons';
 import {
@@ -19,6 +19,7 @@ import { AppFooter } from '@app/components/AppFooter';
 import { ConfirmDialog } from '@app/components/ConfirmDialog';
 import { SkeletonLines } from '@app/components/Skeleton';
 import { SundewMark } from '@app/components/SundewMark';
+import { copyTitle } from '@app/lib/copyTitle';
 import { relativeTime } from '@app/lib/relativeTime';
 
 function localIdFromKey(key: string): string {
@@ -146,6 +147,32 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
         setPendingDelete(form);
     };
 
+    // Duplicate needs the full definition; summaries don't carry one.
+    const duplicateMutation = useMutation({
+        mutationFn: async (form: FormSummary) => {
+            const detail = await api.getForm(form.id);
+            return api.createForm({
+                ...detail.definition,
+                title: copyTitle(detail.definition.title),
+            });
+        },
+        onSuccess: async (created) => {
+            await queryClient.invalidateQueries({ queryKey: ['forms'], exact: true });
+            navigate(`/edit/${created.id}`);
+        },
+        onError: (error) =>
+            setActionError(
+                error instanceof ApiFailure && error.status === 403
+                    ? 'form limit reached · delete a form first'
+                    : 'could not duplicate the form · try again',
+            ),
+    });
+
+    const duplicateForm = (form: FormSummary) => {
+        setActionError(null);
+        duplicateMutation.mutate(form);
+    };
+
     const claimLocalDocs = async () => {
         setClaiming(true);
         setActionError(null);
@@ -247,6 +274,14 @@ function SignedInWorkspace({ userLabel }: { userLabel: string }) {
                                         {'Responses ->'}
                                     </Link>
                                 )}
+                                <button
+                                    type="button"
+                                    className="text-button mono"
+                                    disabled={duplicateMutation.isPending}
+                                    onClick={() => duplicateForm(form)}
+                                >
+                                    Duplicate
+                                </button>
                                 <button
                                     type="button"
                                     className="text-button mono"
