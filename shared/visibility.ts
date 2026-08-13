@@ -188,8 +188,15 @@ function answerError(question: Question, value: AnswerValue): string | null {
             if (question.format === 'email' && !EMAIL_RE.test(value)) {
                 return 'Enter a valid email address';
             }
-            if (question.format === 'number' && Number.isNaN(Number(value))) {
-                return 'Enter a number';
+            if (question.format === 'number') {
+                const n = Number(value);
+                if (Number.isNaN(n)) return 'Enter a number';
+                if (question.min !== undefined && n < question.min) {
+                    return `Enter ${question.min} or more`;
+                }
+                if (question.max !== undefined && n > question.max) {
+                    return `Enter ${question.max} or less`;
+                }
             }
             if (question.format === 'date') {
                 if (!DATE_RE.test(value) || Number.isNaN(Date.parse(value))) {
@@ -325,11 +332,29 @@ export function publishProblems(def: FormDefinition): string[] {
     for (const section of def.sections) {
         checkRules(section.title || 'Untitled section', section.visibleWhen);
         for (const question of section.questions) {
+            const title = question.title || 'Untitled question';
             if (question.title.trim() === '') problems.push('Every question needs a title');
             if (hasOptions(question) && question.options.some((o) => o.label.trim() === '')) {
-                problems.push(`"${question.title || 'Untitled question'}" has an empty answer choice`);
+                problems.push(`"${title}" has an empty answer choice`);
             }
-            checkRules(question.title || 'Untitled question', question.visibleWhen);
+            if (
+                question.type === 'shortText' &&
+                question.format === 'number' &&
+                question.min !== undefined &&
+                question.max !== undefined &&
+                question.min > question.max
+            ) {
+                problems.push(`"${title}" has a number minimum above its maximum`);
+            }
+            if (
+                question.type === 'checkbox' &&
+                question.minSelected !== undefined &&
+                question.maxSelected !== undefined &&
+                question.minSelected > question.maxSelected
+            ) {
+                problems.push(`"${title}" requires more choices than it allows`);
+            }
+            checkRules(title, question.visibleWhen);
             seen.add(question.id);
         }
     }

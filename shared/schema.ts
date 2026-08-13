@@ -57,6 +57,11 @@ export const zQuestion = z.discriminatedUnion('type', [
         ...questionBase,
         type: z.literal('shortText'),
         format: z.enum(['text', 'email', 'number', 'date']),
+        /** Respondent-visible hint; ignored by date inputs. */
+        placeholder: z.string().max(LIMITS.optionLabelChars).optional(),
+        /** Bounds enforced only when format is 'number'. */
+        min: z.number().optional(),
+        max: z.number().optional(),
     }),
     z.object({
         ...questionBase,
@@ -76,6 +81,9 @@ export const zQuestion = z.discriminatedUnion('type', [
         ...questionBase,
         type: z.literal('rating'),
         scale: z.number().int().min(2).max(10),
+        /** Optional anchors rendered at the ends of the scale. */
+        lowLabel: z.string().max(LIMITS.optionLabelChars).optional(),
+        highLabel: z.string().max(LIMITS.optionLabelChars).optional(),
     }),
 ]);
 

@@ -381,6 +381,49 @@ describe('CHANGE_QUESTION_TYPE', () => {
         expect(rule?.value).toBe(optionId);
     });
 
+    it('drops validation extras on type change, and undo restores them', () => {
+        let state = seeded();
+        state = builderReducer(state, {
+            kind: 'UPDATE_QUESTION',
+            questionId: qid(7),
+            patch: { lowLabel: 'Dull', highLabel: 'Thrilling' },
+        });
+        const rated = findQuestionWithSection(state.doc, qid(7))?.question;
+        expect(rated?.type === 'rating' && rated.lowLabel).toBe('Dull');
+
+        const converted = builderReducer(state, {
+            kind: 'CHANGE_QUESTION_TYPE',
+            questionId: qid(7),
+            type: 'shortText',
+            mintedOptionId: uuid(82),
+        });
+        const asText = findQuestionWithSection(converted.doc, qid(7))?.question;
+        expect(asText?.type).toBe('shortText');
+        expect(asText && 'lowLabel' in asText).toBe(false);
+
+        const undone = builderReducer(converted, { kind: 'UNDO' });
+        const back = findQuestionWithSection(undone.doc, qid(7))?.question;
+        expect(back?.type === 'rating' && back.highLabel).toBe('Thrilling');
+    });
+
+    it('patches number bounds and placeholder through UPDATE_QUESTION', () => {
+        let state = seeded();
+        state = builderReducer(state, {
+            kind: 'UPDATE_QUESTION',
+            questionId: qid(1),
+            patch: { placeholder: 'First and last name' },
+        });
+        state = builderReducer(state, {
+            kind: 'UPDATE_QUESTION',
+            questionId: qid(1),
+            patch: { format: 'number', min: 0, max: 9.5 },
+        });
+        const q = findQuestionWithSection(state.doc, qid(1))?.question;
+        expect(q?.type === 'shortText' && q.min).toBe(0);
+        expect(q?.type === 'shortText' && q.max).toBe(9.5);
+        expect(q?.type === 'shortText' && q.placeholder).toBe('First and last name');
+    });
+
     it('flipping a shortText format drops rules whose operator no longer fits', () => {
         let state = seeded();
         state = builderReducer(state, {

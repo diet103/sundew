@@ -20,6 +20,13 @@ function intOrUndefined(raw: string): number | undefined {
     return Number.isNaN(n) ? undefined : n;
 }
 
+/** Like intOrUndefined, but number-format bounds may be decimals. */
+function numOrUndefined(raw: string): number | undefined {
+    if (raw === '') return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : undefined;
+}
+
 export interface QuestionSettingsProps {
     doc: FormDefinition;
     question: Question;
@@ -71,13 +78,19 @@ export function QuestionSettings({ doc, question, dispatch, onSelect }: Question
                     <span className="bldr-field-label mono">format</span>
                     <select
                         value={question.format}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                            const format = event.target.value as typeof question.format;
+                            // Bounds only mean anything on numbers; clear them
+                            // in the same undoable patch when leaving.
                             dispatch(
-                                updateQuestion(question.id, {
-                                    format: event.target.value as typeof question.format,
-                                }),
-                            )
-                        }
+                                updateQuestion(
+                                    question.id,
+                                    format === 'number'
+                                        ? { format }
+                                        : { format, min: undefined, max: undefined },
+                                ),
+                            );
+                        }}
                     >
                         <option value="text">text</option>
                         <option value="email">email</option>
@@ -85,6 +98,63 @@ export function QuestionSettings({ doc, question, dispatch, onSelect }: Question
                         <option value="date">date</option>
                     </select>
                 </label>
+            )}
+            {question.type === 'shortText' && question.format !== 'date' && (
+                <label className="bldr-field">
+                    <span className="bldr-field-label mono">placeholder</span>
+                    <input
+                        type="text"
+                        maxLength={LIMITS.optionLabelChars}
+                        value={question.placeholder ?? ''}
+                        placeholder="none"
+                        onChange={(event) =>
+                            dispatch(
+                                updateQuestion(question.id, {
+                                    placeholder:
+                                        event.target.value === ''
+                                            ? undefined
+                                            : event.target.value,
+                                }),
+                            )
+                        }
+                    />
+                </label>
+            )}
+            {question.type === 'shortText' && question.format === 'number' && (
+                <div className="bldr-btnrow">
+                    <label className="bldr-field">
+                        <span className="bldr-field-label mono">min</span>
+                        <input
+                            type="number"
+                            step="any"
+                            value={question.min ?? ''}
+                            placeholder="no min"
+                            onChange={(event) =>
+                                dispatch(
+                                    updateQuestion(question.id, {
+                                        min: numOrUndefined(event.target.value),
+                                    }),
+                                )
+                            }
+                        />
+                    </label>
+                    <label className="bldr-field">
+                        <span className="bldr-field-label mono">max</span>
+                        <input
+                            type="number"
+                            step="any"
+                            value={question.max ?? ''}
+                            placeholder="no max"
+                            onChange={(event) =>
+                                dispatch(
+                                    updateQuestion(question.id, {
+                                        max: numOrUndefined(event.target.value),
+                                    }),
+                                )
+                            }
+                        />
+                    </label>
+                </div>
             )}
             {question.type === 'longText' && (
                 <label className="bldr-field">
@@ -106,21 +176,63 @@ export function QuestionSettings({ doc, question, dispatch, onSelect }: Question
                 </label>
             )}
             {question.type === 'rating' && (
-                <label className="bldr-field">
-                    <span className="bldr-field-label mono">scale</span>
-                    <input
-                        type="number"
-                        min={2}
-                        max={10}
-                        value={question.scale}
-                        onChange={(event) => {
-                            const n = intOrUndefined(event.target.value);
-                            if (n !== undefined && n >= 2 && n <= 10) {
-                                dispatch(updateQuestion(question.id, { scale: n }));
-                            }
-                        }}
-                    />
-                </label>
+                <>
+                    <label className="bldr-field">
+                        <span className="bldr-field-label mono">scale</span>
+                        <input
+                            type="number"
+                            min={2}
+                            max={10}
+                            value={question.scale}
+                            onChange={(event) => {
+                                const n = intOrUndefined(event.target.value);
+                                if (n !== undefined && n >= 2 && n <= 10) {
+                                    dispatch(updateQuestion(question.id, { scale: n }));
+                                }
+                            }}
+                        />
+                    </label>
+                    <div className="bldr-btnrow">
+                        <label className="bldr-field">
+                            <span className="bldr-field-label mono">low label</span>
+                            <input
+                                type="text"
+                                maxLength={LIMITS.optionLabelChars}
+                                value={question.lowLabel ?? ''}
+                                placeholder="none"
+                                onChange={(event) =>
+                                    dispatch(
+                                        updateQuestion(question.id, {
+                                            lowLabel:
+                                                event.target.value === ''
+                                                    ? undefined
+                                                    : event.target.value,
+                                        }),
+                                    )
+                                }
+                            />
+                        </label>
+                        <label className="bldr-field">
+                            <span className="bldr-field-label mono">high label</span>
+                            <input
+                                type="text"
+                                maxLength={LIMITS.optionLabelChars}
+                                value={question.highLabel ?? ''}
+                                placeholder="none"
+                                onChange={(event) =>
+                                    dispatch(
+                                        updateQuestion(question.id, {
+                                            highLabel:
+                                                event.target.value === ''
+                                                    ? undefined
+                                                    : event.target.value,
+                                        }),
+                                    )
+                                }
+                            />
+                        </label>
+                    </div>
+                </>
             )}
             {question.type === 'checkbox' && (
                 <div className="bldr-btnrow">

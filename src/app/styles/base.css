@@ -315,6 +315,14 @@ fieldset.sd-rating {
     min-width: 0;
 }
 
+/* Optional scale anchors ("Not likely" · circles · "Very likely"). */
+.sd-rating-endlabel {
+    align-self: center;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    max-width: 8rem;
+}
+
 .sd-options {
     display: flex;
     flex-direction: column;

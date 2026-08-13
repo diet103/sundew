@@ -23,6 +23,9 @@ export function RatingField({
             disabled={disabled}
         >
             <legend className="sr-only">{question.title}</legend>
+            {question.lowLabel !== undefined && question.lowLabel.trim() !== '' && (
+                <span className="sd-rating-endlabel mono">{question.lowLabel}</span>
+            )}
             {steps.map((step) => {
                 const optionId = `${inputId}-${step}`;
                 return (
@@ -51,6 +54,9 @@ export function RatingField({
                     </span>
                 );
             })}
+            {question.highLabel !== undefined && question.highLabel.trim() !== '' && (
+                <span className="sd-rating-endlabel mono">{question.highLabel}</span>
+            )}
             {value !== undefined && !question.required && (
                 <button
                     type="button"

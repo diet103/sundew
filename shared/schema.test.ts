@@ -26,6 +26,37 @@ describe('zFormDefinition', () => {
         }
     });
 
+    it('accepts the optional validation fields', () => {
+        const def = emptyForm();
+        const number = newQuestion('shortText');
+        if (number.type === 'shortText') {
+            number.format = 'number';
+            number.min = 0.5;
+            number.max = 50;
+            number.placeholder = 'years';
+        }
+        const rating = newQuestion('rating');
+        if (rating.type === 'rating') {
+            rating.lowLabel = 'Not likely';
+            rating.highLabel = 'Very likely';
+        }
+        def.sections[0]!.questions.push(number, rating);
+        expect(() => parseDefinition(def)).not.toThrow();
+    });
+
+    it('strips unknown keys instead of rejecting them (additive safety)', () => {
+        // The whole no-version-bump strategy rests on this zod behavior: docs
+        // written by newer code parse under older schemas, minus the extras.
+        const def = specimenIntake() as Record<string, unknown>;
+        const sections = def.sections as { questions: Record<string, unknown>[] }[];
+        sections[0]!.questions[0]!.futureField = 'from a newer build';
+        const parsed = zFormDefinition.safeParse(def);
+        expect(parsed.success).toBe(true);
+        if (parsed.success) {
+            expect('futureField' in parsed.data.sections[0]!.questions[0]!).toBe(false);
+        }
+    });
+
     it('rejects an unknown schemaVersion', () => {
         const def = { ...specimenIntake(), schemaVersion: 2 };
         expect(zFormDefinition.safeParse(def).success).toBe(false);

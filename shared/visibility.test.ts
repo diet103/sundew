@@ -332,6 +332,25 @@ describe('validateSubmission', () => {
         expect(validateSubmission(def, { ...base, [rating.id]: 5 }).ok).toBe(true);
     });
 
+    it('enforces number min/max bounds', () => {
+        const def = chainForm();
+        def.sections[0]!.questions[1]!.visibleWhen = undefined;
+        const q2 = def.sections[0]!.questions[1]!;
+        if (q2.type === 'shortText') {
+            q2.format = 'number';
+            q2.min = 1;
+            q2.max = 10.5;
+        }
+        const errorFor = (value: string) =>
+            validateSubmission(def, { [uuid(2)]: value }).errors.find(
+                (e) => e.questionId === uuid(2),
+            );
+        expect(errorFor('0')?.message).toBe('Enter 1 or more');
+        expect(errorFor('11')?.message).toBe('Enter 10.5 or less');
+        expect(errorFor('10.5')).toBeUndefined();
+        expect(errorFor('1')).toBeUndefined();
+    });
+
     it('strips hidden answers from the sanitized result', () => {
         const def = chainForm();
         const result = validateSubmission(def, {
@@ -372,6 +391,26 @@ describe('publishProblems', () => {
             rules: [{ when: uuid(3), operator: 'isAnswered' }],
         };
         expect(publishProblems(laterSource).join(' ')).toMatch(/missing or later question/);
+    });
+
+    it('catches inverted bounds on numbers and checkboxes', () => {
+        const def = chainForm();
+        def.sections[0]!.questions[1]!.visibleWhen = undefined;
+        const q2 = def.sections[0]!.questions[1]!;
+        if (q2.type === 'shortText') {
+            q2.format = 'number';
+            q2.min = 10;
+            q2.max = 1;
+        }
+        expect(publishProblems(def).join(' ')).toMatch(/number minimum above its maximum/);
+
+        const boxes = specimenIntake();
+        const conditions = boxes.sections[1]!.questions[1]!;
+        if (conditions.type === 'checkbox') {
+            conditions.minSelected = 3;
+            conditions.maxSelected = 1;
+        }
+        expect(publishProblems(boxes).join(' ')).toMatch(/requires more choices than it allows/);
     });
 
     it('catches malformed literal rule values', () => {

@@ -27,6 +27,7 @@ export function ShortTextField({
             data-format={question.format}
             type={INPUT_TYPE[question.format]}
             inputMode={question.format === 'number' ? 'decimal' : undefined}
+            placeholder={question.format === 'date' ? undefined : question.placeholder}
             maxLength={LIMITS.answerChars}
             value={value ?? ''}
             onChange={(event) => onChange(event.target.value === '' ? undefined : event.target.value)}
