@@ -33,7 +33,7 @@
     },
     "vars": {
         "GOOGLE_CLIENT_ID": "",
-        "GITHUB_CLIENT_ID": ""
+        "GITHUB_CLIENT_ID": "Ov23liPTZ3rQB4htE91U"
     }
     // Secrets (wrangler secret put): GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET.
     // Rate limiting uses a D1 fixed-window counter (see worker/middleware/ratelimit.ts);
