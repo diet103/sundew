@@ -15,11 +15,10 @@
         "not_found_handling": "single-page-application",
         "run_worker_first": ["/forms/api/*", "/", "/forms/robots.txt"]
     },
-    // Cutover: uncomment once dietergrosswiler.com serves traffic through Cloudflare.
     // The more-specific /forms* route wins over the resume worker's custom domain.
-    // "routes": [
-    //     { "pattern": "dietergrosswiler.com/forms*", "zone_name": "dietergrosswiler.com" }
-    // ],
+    "routes": [
+        { "pattern": "dietergrosswiler.com/forms*", "zone_name": "dietergrosswiler.com" }
+    ],
     "d1_databases": [
         {
             "binding": "DB",
