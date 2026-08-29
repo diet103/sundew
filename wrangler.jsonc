@@ -32,7 +32,7 @@
         "crons": ["17 4 * * *"]
     },
     "vars": {
-        "GOOGLE_CLIENT_ID": "",
+        "GOOGLE_CLIENT_ID": "679767420344-m53gov055mhs5i3tsq5bnh56p604eoi2.apps.googleusercontent.com",
         "GITHUB_CLIENT_ID": "Ov23liPTZ3rQB4htE91U"
     }
     // Secrets (wrangler secret put): GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET.
