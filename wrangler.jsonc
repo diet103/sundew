@@ -24,7 +24,7 @@
         {
             "binding": "DB",
             "database_name": "sundew",
-            "database_id": "REPLACE_WITH_wrangler_d1_create_OUTPUT",
+            "database_id": "e004a908-5181-401d-95a7-379b5cec1089",
             "migrations_dir": "migrations"
         }
     ],

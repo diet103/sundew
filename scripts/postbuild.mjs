@@ -7,7 +7,8 @@
 // 'single-page-application' fallback serves for deep links, and _headers
 // carries the security/cache headers since HTML is served by the asset
 // layer, not the worker.
-import { copyFileSync, existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CLIENT = 'dist/client';
@@ -20,9 +21,17 @@ for (const entry of ['assets', 'fonts', 'favicon.svg', 'index.html']) {
 }
 copyFileSync(join(FORMS, 'index.html'), join(CLIENT, 'index.html'));
 
+// The no-FOUC theme script stays inline, so script-src carries its hash,
+// computed from the built HTML — edits to the script can't silently
+// resurrect the CSP block that would flash every visitor to light theme.
+const html = readFileSync(join(FORMS, 'index.html'), 'utf8');
+const inlineHashes = [...html.matchAll(/<script(?![^>]*\bsrc)[^>]*>([\s\S]*?)<\/script>/g)].map(
+    ([, body]) => `'sha256-${createHash('sha256').update(body).digest('base64')}'`,
+);
+
 const csp = [
     "default-src 'self'",
-    "script-src 'self'",
+    `script-src 'self'${inlineHashes.length > 0 ? ' ' + inlineHashes.join(' ') : ''}`,
     "style-src 'self' 'unsafe-inline'",
     'img-src \'self\' data: https://avatars.githubusercontent.com https://lh3.googleusercontent.com',
     "connect-src 'self'",
